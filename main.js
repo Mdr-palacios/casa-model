@@ -53,12 +53,12 @@ const ROOMS = [
   { key: 'living', name: 'Sala', x: [0, 4.5], z: [0, 4.5] },
   { key: 'kitchen', name: 'Cocina', x: [6.0, 10.0], z: [0, 4.0] },
   { key: 'hallway', name: 'Pasillo', x: [4.5, 6.0], z: [0, 9.0] },
-  { key: 'bed1', name: 'Recámara 1 (Abuela)', x: [0, 4.5], z: [4.5, 7.3] },
-  { key: 'bath1', name: 'Baño', x: [3.0, 4.5], z: [7.3, 9.0] },
-  { key: 'bed1b', name: null, x: [0, 3.0], z: [7.3, 9.0], mergeInto: 'bed1' },
-  { key: 'bed2', name: 'Recámara 2', x: [6.0, 10.0], z: [4.0, 7.3] },
-  { key: 'bath2', name: 'Baño', x: [8.5, 10.0], z: [7.3, 9.0] },
-  { key: 'bed2b', name: null, x: [6.0, 8.5], z: [7.3, 9.0], mergeInto: 'bed2' },
+  { key: 'bed1', name: 'Recámara 1 (Abuela)', x: [0, 4.5], z: [6.2, 9.0] },
+  { key: 'bath1', name: 'Baño', x: [3.0, 4.5], z: [4.5, 6.2] },
+  { key: 'bed1b', name: null, x: [0, 3.0], z: [4.5, 6.2], mergeInto: 'bed1' },
+  { key: 'bed2', name: 'Recámara 2', x: [6.0, 10.0], z: [5.7, 9.0] },
+  { key: 'bath2', name: 'Baño', x: [8.5, 10.0], z: [4.0, 5.7] },
+  { key: 'bed2b', name: null, x: [6.0, 8.5], z: [4.0, 5.7], mergeInto: 'bed2' },
 ];
 
 /* ---------------------------- renderer ---------------------------- */
@@ -391,13 +391,13 @@ wallRun('x', 4.0, 6.0, 10.0, []);
 // against the west exterior wall (x=0), so the entrance is right at that wall
 wallRun('x', 4.5, 0, 4.5, [{ from: 0, to: 0.9, kind: 'door' }]);
 
-// Bathroom partitions inside bedroom 1
-wallRun('z', 3.0, 7.3, 9.0, [{ from: 7.3, to: 8.0, kind: 'door' }], blockMat);
-wallRun('x', 7.3, 3.0, 4.5, [], blockMat);
+// Bathroom partitions inside bedroom 1 (northeast corner)
+wallRun('z', 3.0, 4.5, 6.2, [{ from: 5.5, to: 6.2, kind: 'door' }], blockMat);
+wallRun('x', 6.2, 3.0, 4.5, [], blockMat);
 
-// Bathroom partitions inside bedroom 2 (mirrored)
-wallRun('z', 8.5, 7.3, 9.0, [{ from: 7.3, to: 8.0, kind: 'door' }], blockMat);
-wallRun('x', 7.3, 8.5, 10.0, [], blockMat);
+// Bathroom partitions inside bedroom 2 (northeast corner, mirrored)
+wallRun('z', 8.5, 4.0, 5.7, [{ from: 5.0, to: 5.7, kind: 'door' }], blockMat);
+wallRun('x', 5.7, 8.5, 10.0, [], blockMat);
 
 /* Brick accent course — one horizontal stripe wrapping the living-room facade */
 (() => {
