@@ -387,8 +387,9 @@ wallRun('z', 6.0, 4.0, 9.0, [{ from: 6.0, to: 6.9, kind: 'door' }]);
 // Kitchen / bedroom2 partition (z=4.0, x 6-10): solid
 wallRun('x', 4.0, 6.0, 10.0, []);
 
-// Living room / bedroom1 partition (z=4.5, x 0-4.5): door
-wallRun('x', 4.5, 0, 4.5, [{ from: 2.0, to: 2.9, kind: 'door' }]);
+// Living room / bedroom1 partition (z=4.5, x 0-4.5): door — moved flush
+// against the west exterior wall (x=0), so the entrance is right at that wall
+wallRun('x', 4.5, 0, 4.5, [{ from: 0, to: 0.9, kind: 'door' }]);
 
 // Bathroom partitions inside bedroom 1
 wallRun('z', 3.0, 7.3, 9.0, [{ from: 7.3, to: 8.0, kind: 'door' }], blockMat);
