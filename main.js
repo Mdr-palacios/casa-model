@@ -8,9 +8,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
  *
  *  Layout (confirmed facts baked in, everything else is a labeled
  *  placeholder estimate — see the "Assumptions & notes" panel):
- *    - Main entrance: 0.56m brick archway in the middle of the front
- *      facade, opening directly into the hallway (no direct exterior
- *      access to the living room or kitchen)
+ *    - Main entrance: brick archway in the middle of the front facade,
+ *      as wide as the hallway, opening directly into it (no direct
+ *      exterior access to the living room or kitchen)
  *    - Middle strip, full depth: Hallway (<2m wide), runs past the
  *      kitchen, separates the two back bedrooms
  *    - Front-left:  Living room  (entered from the hallway)
@@ -50,14 +50,14 @@ const ROOM_FLOOR = {
 };
 
 const ROOMS = [
-  { key: 'living', name: 'Living Room', x: [0, 4.5], z: [0, 4.5] },
-  { key: 'kitchen', name: 'Kitchen', x: [6.0, 10.0], z: [0, 4.0] },
-  { key: 'hallway', name: 'Hallway', x: [4.5, 6.0], z: [0, 9.0] },
-  { key: 'bed1', name: "Bedroom 1 (Grandma's)", x: [0, 4.5], z: [4.5, 7.3] },
-  { key: 'bath1', name: 'Bathroom', x: [3.0, 4.5], z: [7.3, 9.0] },
+  { key: 'living', name: 'Sala', x: [0, 4.5], z: [0, 4.5] },
+  { key: 'kitchen', name: 'Cocina', x: [6.0, 10.0], z: [0, 4.0] },
+  { key: 'hallway', name: 'Pasillo', x: [4.5, 6.0], z: [0, 9.0] },
+  { key: 'bed1', name: 'Recámara 1 (Abuela)', x: [0, 4.5], z: [4.5, 7.3] },
+  { key: 'bath1', name: 'Baño', x: [3.0, 4.5], z: [7.3, 9.0] },
   { key: 'bed1b', name: null, x: [0, 3.0], z: [7.3, 9.0], mergeInto: 'bed1' },
-  { key: 'bed2', name: 'Bedroom 2', x: [6.0, 10.0], z: [4.0, 7.3] },
-  { key: 'bath2', name: 'Bathroom', x: [8.5, 10.0], z: [7.3, 9.0] },
+  { key: 'bed2', name: 'Recámara 2', x: [6.0, 10.0], z: [4.0, 7.3] },
+  { key: 'bath2', name: 'Baño', x: [8.5, 10.0], z: [7.3, 9.0] },
   { key: 'bed2b', name: null, x: [6.0, 8.5], z: [7.3, 9.0], mergeInto: 'bed2' },
 ];
 
@@ -309,10 +309,10 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
 /* ------------------------------ walls -------------------------------- */
 
 // Front wall (z=0): single main entrance — a brick archway into the
-// hallway, in the middle of the facade. Living room and kitchen have
-// no direct exterior access.
+// hallway, in the middle of the facade, as wide as the hallway itself.
+// Living room and kitchen have no direct exterior access.
 wallRun('x', 0, HOUSE.x[0], HOUSE.x[1], [
-  { from: 4.97, to: 5.53, kind: 'archway' },
+  { from: 4.5, to: 6.0, kind: 'archway' },
 ]);
 
 // Back wall (z=9): bedroom windows
