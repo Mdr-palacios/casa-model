@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Casa Model — Schematic Walkthrough</title>
+<meta name="description" content="Interactive schematic 3D model of the house, built from described room layout and measurements." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=General+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --font-display: 'Fraunces', serif;
+    --font-body: 'General Sans', -apple-system, sans-serif;
+    --color-bg: #efe7d8;
+    --color-surface: rgba(255,250,240,0.82);
+    --color-border: rgba(60,45,30,0.14);
+    --color-text: #2c2318;
+    --color-text-muted: #6b5c47;
+    --color-primary: #b5573c;
+    --color-primary-dark: #8a3f2a;
+    --text-xs: 12px;
+    --text-sm: 13px;
+    --text-base: 15px;
+    --text-lg: 18px;
+    --text-xl: 24px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --panel-radius: 14px;
+    --transition-ui: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:var(--font-body);background:var(--color-bg);}
+  #canvas-holder{position:fixed;inset:0;}
+  canvas{display:block;touch-action:none;}
+
+  .ui{position:fixed;inset:0;pointer-events:none;z-index:10;color:var(--color-text);}
+  .ui [data-interactive]{pointer-events:auto;}
+
+  .panel{
+    background:var(--color-surface);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--color-border);
+    border-radius:var(--panel-radius);
+    box-shadow:0 8px 30px rgba(50,35,20,0.14);
+  }
+
+  .header{
+    position:absolute; top:var(--space-4); left:var(--space-4);
+    padding:var(--space-3) var(--space-4);
+    max-width:320px;
+  }
+  .header h1{
+    font-family:var(--font-display); font-weight:600; font-size:var(--text-lg);
+    margin:0 0 2px 0; letter-spacing:-0.01em;
+  }
+  .header p{
+    font-size:var(--text-xs); color:var(--color-text-muted); margin:0; line-height:1.45;
+  }
+
+  .controls{
+    position:absolute; bottom:var(--space-4); left:var(--space-4);
+    padding:var(--space-2);
+    display:flex; gap:var(--space-1); flex-wrap:wrap; max-width:260px;
+  }
+  .btn{
+    font-family:var(--font-body); font-size:var(--text-sm); font-weight:500;
+    color:var(--color-text); background:transparent; border:1px solid var(--color-border);
+    border-radius:10px; padding:8px 12px; cursor:pointer; transition:background var(--transition-ui), color var(--transition-ui);
+    white-space:nowrap;
+  }
+  .btn:hover{ background:rgba(181,87,60,0.1); }
+  .btn.active{ background:var(--color-primary); border-color:var(--color-primary); color:#fdf6ee; }
+
+  .legend{
+    position:absolute; bottom:var(--space-4); right:var(--space-4);
+    padding:var(--space-3) var(--space-4); max-width:200px;
+  }
+  .legend h2{font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.06em; color:var(--color-text-muted); margin:0 0 var(--space-2) 0; font-weight:600;}
+  .legend-row{display:flex; align-items:center; gap:8px; font-size:var(--text-xs); margin-bottom:6px;}
+  .swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+
+  .notes-toggle{
+    position:absolute; top:var(--space-4); right:var(--space-4);
+    padding:8px 14px; font-size:var(--text-sm); font-weight:500; cursor:pointer;
+    display:flex; align-items:center; gap:6px;
+  }
+  .notes-panel{
+    position:absolute; top:64px; right:var(--space-4);
+    width:320px; max-height:70vh; overflow-y:auto;
+    padding:var(--space-4); font-size:var(--text-xs); line-height:1.55; color:var(--color-text);
+    transform:translateY(-8px); opacity:0; pointer-events:none;
+    transition:transform var(--transition-ui), opacity var(--transition-ui);
+  }
+  .notes-panel.open{ transform:translateY(0); opacity:1; pointer-events:auto; }
+  .notes-panel h3{font-size:var(--text-sm); margin:0 0 6px 0; font-family:var(--font-display); font-weight:600;}
+  .notes-panel h3.second{margin-top:14px;}
+  .notes-panel ul{margin:0; padding-left:16px;}
+  .notes-panel li{margin-bottom:5px;}
+  .tag-confirmed{color:#4c7a3f; font-weight:600;}
+  .tag-assumed{color:var(--color-primary-dark); font-weight:600;}
+
+  .hint{
+    position:absolute; top:var(--space-4); left:50%; transform:translateX(-50%);
+    padding:6px 14px; font-size:var(--text-xs); color:var(--color-text-muted);
+    opacity:0.9;
+  }
+
+  @media (max-width:640px){
+    .header{max-width:220px;}
+    .legend{display:none;}
+    .notes-panel{width:82vw; right:var(--space-2);}
+    .hint{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-holder"></div>
+
+<div class="ui">
+  <div class="header panel">
+    <h1>Schematic house model</h1>
+    <p>Built from room descriptions &amp; the measurements you've shared so far — not final construction plans.</p>
+  </div>
+
+  <div class="hint panel" id="hint">Drag to orbit · scroll to zoom · right-drag to pan</div>
+
+  <button class="notes-toggle panel" id="notesToggle" data-interactive>Assumptions &amp; notes ▾</button>
+  <div class="notes-panel panel" id="notesPanel">
+    <h3>What we actually know</h3>
+    <ul>
+      <li><span class="tag-confirmed">Confirmed</span> — the brick archway is 56cm wide, and is the main entrance, opening into the middle hallway.</li>
+      <li><span class="tag-confirmed">Confirmed</span> — the hallway between the two bedrooms is under 2m wide.</li>
+      <li><span class="tag-confirmed">Confirmed</span> — the kitchen has no direct exterior door; it's reached only through the hallway.</li>
+      <li><span class="tag-confirmed">Confirmed</span> — flow: entrance archway → hallway → living room → grandma's bedroom (bedroom 1), which has its own bathroom.</li>
+      <li><span class="tag-confirmed">Confirmed</span> — bedroom 2 is reached by walking the hallway past the kitchen, and also has its own bathroom.</li>
+      <li><span class="tag-confirmed">Confirmed</span> — construction is cinder block with brick accent courses and a concrete bond beam; the whole plot sits inside a cement perimeter fence.</li>
+    </ul>
+    <h3 class="second">What's estimated (placeholder, easy to correct)</h3>
+    <ul>
+      <li><span class="tag-assumed">Assumed</span> — overall room footprints (living room ~4.5×4.5m, kitchen ~4×4m, bedrooms ~4.5×4.5–5m).</li>
+      <li><span class="tag-assumed">Assumed</span> — wall thickness (15cm), ceiling height (2.6m), interior door widths (0.9m).</li>
+      <li><span class="tag-assumed">Assumed</span> — window sizes/positions (3 openings, matching the tarp-covered ones seen in the exterior photos).</li>
+      <li><span class="tag-assumed">Assumed</span> — the ensuite bathroom sizes for both bedrooms, and the exact position of the living room's internal doorway from the hallway.</li>
+      <li><span class="tag-assumed">Assumed</span> — perimeter fence setback and gate position. Bedrooms are shown empty since exact furniture placement isn't confirmed yet.</li>
+    </ul>
+    <h3 class="second">To tighten this up</h3>
+    <ul>
+      <li>The measuring-tape photo (in the hallway between the bedrooms) would let us lock in the real hallway width and wall heights.</li>
+      <li>Any photo with the Apple Watch (45mm case) flat against a wall/floor gives a precise scale reference for the rest.</li>
+    </ul>
+  </div>
+
+  <div class="controls">
+    <button class="btn active" id="btnOrbit" data-interactive>Orbit view</button>
+    <button class="btn" id="btnTop" data-interactive>Floor plan</button>
+    <button class="btn" id="btnWalk" data-interactive>Walk through</button>
+    <button class="btn active" id="btnLabels" data-interactive>Labels: on</button>
+    <button class="btn" id="btnRoof" data-interactive>Roof: off</button>
+  </div>
+
+  <div class="legend panel">
+    <h2>Rooms</h2>
+    <div class="legend-row"><span class="swatch" style="background:#c98f6d"></span>Living Room</div>
+    <div class="legend-row"><span class="swatch" style="background:#d9b26a"></span>Kitchen</div>
+    <div class="legend-row"><span class="swatch" style="background:#b7a68c"></span>Hallway</div>
+    <div class="legend-row"><span class="swatch" style="background:#9fb08a"></span>Bedroom 1 (Grandma's)</div>
+    <div class="legend-row"><span class="swatch" style="background:#8fa6b0"></span>Bathroom (×2)</div>
+    <div class="legend-row"><span class="swatch" style="background:#a58fb0"></span>Bedroom 2</div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
