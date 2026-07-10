@@ -56,9 +56,9 @@ const ROOMS = [
   { key: 'bed1', name: 'Recámara 1 (Abuela)', x: [0, 4.5], z: [4.5, 7.3] },
   { key: 'bath1', name: 'Baño', x: [3.0, 4.5], z: [7.3, 9.0] },
   { key: 'bed1b', name: null, x: [0, 3.0], z: [7.3, 9.0], mergeInto: 'bed1' },
-  { key: 'bed2', name: 'Recámara 2', x: [6.0, 10.0], z: [4.0, 7.3] },
-  { key: 'bath2', name: 'Baño', x: [8.5, 10.0], z: [7.3, 9.0] },
-  { key: 'bed2b', name: null, x: [6.0, 8.5], z: [7.3, 9.0], mergeInto: 'bed2' },
+  { key: 'bed2', name: 'Recámara 2', x: [7.5, 10.0], z: [4.0, 9.0] },
+  { key: 'bath2', name: 'Baño', x: [6.0, 7.5], z: [4.0, 5.7] },
+  { key: 'bed2b', name: null, x: [6.0, 7.5], z: [5.7, 9.0], mergeInto: 'bed2' },
 ];
 
 /* ---------------------------- renderer ---------------------------- */
@@ -143,10 +143,19 @@ ROOMS.forEach((r) => {
   // Small utility rooms (bathrooms) sit lower than bedroom/living-space
   // labels so they read as clearly separate even when they're close together
   const labelY = r.key === 'bath1' || r.key === 'bath2' ? 1.55 : 2.9;
-  // Hallway is long and thin — place its label toward the front (near the
-  // entrance) rather than dead-center, so it doesn't crowd the back rooms
-  const labelZ = r.key === 'hallway' ? 2.0 : (r.z[0] + r.z[1]) / 2;
-  label.position.set((r.x[0] + r.x[1]) / 2, labelY, labelZ);
+  // Manual nudges to keep specific labels clear of walls/neighboring labels:
+  // hallway sits mid-corridor (clear of both the entrance arch and back
+  // rooms), bath1 is pulled back from the hallway wall, bath2 is pulled
+  // toward its far wall so it doesn't crowd the kitchen label just in front.
+  const LABEL_POS = {
+    hallway: { z: 3.3 },
+    bath1: { x: 3.6, z: 8.3 },
+    bath2: { z: 5.3 },
+  };
+  const override = LABEL_POS[r.key] || {};
+  const labelX = override.x ?? (r.x[0] + r.x[1]) / 2;
+  const labelZ = override.z ?? (r.z[0] + r.z[1]) / 2;
+  label.position.set(labelX, labelY, labelZ);
   labelGroup.add(label);
 });
 // merged slivers (bed1b, bed2b) get their parent room's floor tint too
@@ -249,20 +258,29 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
 
   // openings themselves: header (and sill for windows) built as separate thin runs
   cuts.forEach((cut) => {
-    const headerY = cut.kind === 'window' ? WIN_H : DOOR_H;
-    // header above opening
+    const radius = (cut.to - cut.from) / 2;
+    const springY = cut.springY ?? DOOR_H;
+    const headerY = cut.kind === 'window' ? WIN_H
+      : cut.kind === 'brickArch' ? springY + radius
+      : DOOR_H;
+    // header above opening (for a brickArch, this is just the flat cap above the rounded top)
     const len = cut.to - cut.from;
     const c = (cut.from + cut.to) / 2;
     const hHeight = H - headerY;
+    const headerMat = cut.kind === 'archway' || cut.kind === 'brickArch' ? brickMat : mat;
     let header;
     if (orientation === 'x') {
-      header = box(len, hHeight, T, cut.kind === 'archway' ? brickMat : mat);
+      header = box(len, hHeight, T, headerMat);
       header.position.set(c, headerY + hHeight / 2, fixed);
     } else {
-      header = box(T, hHeight, len, cut.kind === 'archway' ? brickMat : mat);
+      header = box(T, hHeight, len, headerMat);
       header.position.set(fixed, headerY + hHeight / 2, c);
     }
     group.add(header);
+
+    if (cut.kind === 'brickArch') {
+      addArchVoussoirs(group, orientation, fixed, cut.from, cut.to, springY);
+    }
 
     if (cut.kind === 'window') {
       let sill;
@@ -306,6 +324,37 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
   return group;
 }
 
+/**
+ * Rounded brick-arch surround: a fan of radial voussoir bricks tracing a
+ * semicircle from the springline on one jamb, over the top, to the
+ * springline on the other jamb — the rounded brick outline seen on real
+ * arched doorways (vs. the flat header used for plain doors/windows).
+ */
+function addArchVoussoirs(group, orientation, fixed, from, to, springY, count = 9) {
+  const cx = (from + to) / 2;
+  const radius = (to - from) / 2;
+  const arcLen = Math.PI * radius;
+  const segLen = Math.max(0.16, (arcLen / count) * 1.25);
+  const thick = 0.15;
+  const depth = T + 0.05;
+  for (let i = 0; i < count; i++) {
+    const theta = (Math.PI * (i + 0.5)) / count;
+    const dx = radius * Math.cos(theta);
+    const dy = radius * Math.sin(theta);
+    let voussoir;
+    if (orientation === 'x') {
+      voussoir = box(segLen, thick, depth, brickMat);
+      voussoir.position.set(cx + dx, springY + dy, fixed);
+      voussoir.rotation.z = theta + Math.PI / 2;
+    } else {
+      voussoir = box(depth, thick, segLen, brickMat);
+      voussoir.position.set(fixed, springY + dy, cx + dx);
+      voussoir.rotation.x = -(theta + Math.PI / 2);
+    }
+    group.add(voussoir);
+  }
+}
+
 /* ------------------------------ walls -------------------------------- */
 
 // Front wall (z=0): single main entrance — a brick archway into the
@@ -327,9 +376,9 @@ wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], []);
 // East wall (x=10): kitchen window
 wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], [{ from: 1.5, to: 2.7, kind: 'window' }]);
 
-// Living room / hallway partition (x=4.5, z 0-4.5): door — the living
-// room is reached by walking in through the hallway entrance
-wallRun('z', 4.5, 0, 4.5, [{ from: 1.0, to: 1.9, kind: 'door' }]);
+// Living room / hallway partition (x=4.5, z 0-4.5): brick round-arch
+// doorway — the living room is reached by walking in through the hallway
+wallRun('z', 4.5, 0, 4.5, [{ from: 1.0, to: 1.9, kind: 'brickArch', springY: 1.85 }]);
 
 // Hallway(back)/bedroom1(back) partition (x=4.5, z 4.5-9): solid
 wallRun('z', 4.5, 4.5, 9, []);
@@ -343,16 +392,17 @@ wallRun('z', 6.0, 4.0, 9.0, [{ from: 6.0, to: 6.9, kind: 'door' }]);
 // Kitchen / bedroom2 partition (z=4.0, x 6-10): solid
 wallRun('x', 4.0, 6.0, 10.0, []);
 
-// Living room / bedroom1 partition (z=4.5, x 0-4.5): door
-wallRun('x', 4.5, 0, 4.5, [{ from: 2.0, to: 2.9, kind: 'door' }]);
+// Living room / bedroom1 partition (z=4.5, x 0-4.5): brick round-arch doorway
+wallRun('x', 4.5, 0, 4.5, [{ from: 2.0, to: 2.9, kind: 'brickArch', springY: 1.85 }]);
 
 // Bathroom partitions inside bedroom 1
 wallRun('z', 3.0, 7.3, 9.0, [{ from: 7.3, to: 8.0, kind: 'door' }], blockMat);
 wallRun('x', 7.3, 3.0, 4.5, [], blockMat);
 
-// Bathroom partitions inside bedroom 2 (mirrored)
-wallRun('z', 8.5, 7.3, 9.0, [{ from: 7.3, to: 8.0, kind: 'door' }], blockMat);
-wallRun('x', 7.3, 8.5, 10.0, [], blockMat);
+// Bathroom partitions inside bedroom 2 — front-left corner, sharing its
+// front wall with the kitchen directly ahead of it
+wallRun('x', 5.7, 6.0, 7.5, [{ from: 6.4, to: 7.1, kind: 'door' }], blockMat);
+wallRun('z', 7.5, 4.0, 5.7, [], blockMat);
 
 /* Brick accent course — one horizontal stripe wrapping the living-room facade */
 (() => {
