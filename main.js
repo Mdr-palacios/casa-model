@@ -29,7 +29,7 @@ const HOUSE = { x: [0, 10], z: [0, 9] };
 // South side has no yard — the fence and house share the same southern wall,
 // so the fence's south edge lines up exactly with the house's back wall (z=9).
 // East, west, and north keep their yard setback.
-const FENCE = { x: [-3.5, 13.5], z: [-3.5, 9], h: 2.0, t: 0.2 };
+const FENCE = { x: [-3.5, 13.5], z: [-3.5, 9], h: H, t: 0.2 }; // fence height matches house wall height
 
 const COLORS = {
   block: 0xb7ae9d,
