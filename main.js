@@ -219,6 +219,133 @@ const benchMat = new THREE.MeshStandardMaterial({ color: COLORS.benchWood, rough
 // Interior plaster finish — painted white on every room-facing wall surface
 const paintMat = new THREE.MeshStandardMaterial({ color: 0xf3efe4, roughness: 0.92 });
 
+/**
+ * Window style options — modeled after the reference photos shared for
+ * comparison. Every window opening in the house gets all four variants
+ * built, and only one is shown at a time via the "Windows" toggle button
+ * so they can be compared side by side without changing the model.
+ */
+const WINDOW_STYLES = [
+  {
+    name: 'Caoba con cuadrícula',
+    frameColor: 0x6b3a22,
+    glassColor: 0x333f49,
+    grid: { cols: 2, rows: 3 },
+    frameW: 0.07,
+  },
+  {
+    name: 'Blanco con cuadrícula',
+    frameColor: 0xf1efe6,
+    glassColor: 0x46565f,
+    grid: { cols: 3, rows: 4 },
+    frameW: 0.05,
+  },
+  {
+    name: 'Bronce con moldura',
+    frameColor: 0xa78a5c,
+    glassColor: 0x38424a,
+    grid: { cols: 2, rows: 2 },
+    frameW: 0.06,
+    molding: true,
+    moldingColor: 0xe8e2d3,
+  },
+  {
+    name: 'Negro sin cuadrícula',
+    frameColor: 0x2b2b2b,
+    glassColor: 0x3a4750,
+    grid: null,
+    frameW: 0.055,
+  },
+];
+WINDOW_STYLES.forEach((s) => {
+  s.frameMat = new THREE.MeshStandardMaterial({
+    color: s.frameColor,
+    roughness: s.name.startsWith('Negro') ? 0.3 : 0.7,
+    metalness: s.name.startsWith('Bronce') ? 0.35 : s.name.startsWith('Negro') ? 0.25 : 0.05,
+  });
+  s.glassMatInst = new THREE.MeshPhysicalMaterial({ color: s.glassColor, roughness: 0.12, transmission: 0.5, thickness: 0.05 });
+  if (s.molding) s.moldingMat = new THREE.MeshStandardMaterial({ color: s.moldingColor, roughness: 0.9 });
+});
+// windowStyleGroups[i] holds every built variant-i mesh group across the whole
+// house; toggling styles just flips `.visible` on these, no rebuilding needed.
+const windowStyleGroups = [[], [], [], []];
+let activeWindowStyle = 0;
+
+/**
+ * Build one window-style variant (frame + center mullion + optional grid +
+ * glass sashes + optional molding surround) for a single opening.
+ * orientation/fixed follow the same convention as wallRun/wallSegBox.
+ */
+function buildWindowVariant(orientation, fixed, from, to, sillY, headerY, style) {
+  const group = new THREE.Group();
+  const len = to - from;
+  const oh = headerY - sillY;
+  const c = (from + to) / 2;
+  const fw = style.frameW;
+  const depth = T * 0.9;
+
+  const mk = (l, h, d, mat) => (orientation === 'x' ? box(l, h, d, mat) : box(d, h, l, mat));
+  const place = (mesh, alongPos, y) => {
+    if (orientation === 'x') mesh.position.set(alongPos, y, fixed);
+    else mesh.position.set(fixed, y, alongPos);
+    mesh.castShadow = false;
+    group.add(mesh);
+  };
+
+  // outer frame
+  place(mk(len, fw, depth, style.frameMat), c, headerY - fw / 2);
+  place(mk(len, fw, depth, style.frameMat), c, sillY + fw / 2);
+  place(mk(fw, oh, depth, style.frameMat), from + fw / 2, (sillY + headerY) / 2);
+  place(mk(fw, oh, depth, style.frameMat), to - fw / 2, (sillY + headerY) / 2);
+
+  // center mullion — divides the sliding window into two sashes
+  const midW = fw * 1.3;
+  place(mk(midW, oh - fw * 2, depth, style.frameMat), c, (sillY + headerY) / 2);
+
+  const innerTop = headerY - fw;
+  const innerBot = sillY + fw;
+  const ih = innerTop - innerBot;
+  const sashes = [
+    { a: from + fw, b: c - midW / 2 },
+    { a: c + midW / 2, b: to - fw },
+  ];
+
+  sashes.forEach((s) => {
+    const sw = s.b - s.a;
+    const sc = (s.a + s.b) / 2;
+    place(mk(sw - 0.02, ih - 0.02, 0.04, style.glassMatInst), sc, (innerTop + innerBot) / 2);
+
+    if (style.grid) {
+      const { cols, rows } = style.grid;
+      const barW = fw * 0.55;
+      for (let i = 1; i < cols; i++) {
+        const gx = s.a + (sw * i) / cols;
+        place(mk(barW, ih, depth * 0.85, style.frameMat), gx, (innerTop + innerBot) / 2);
+      }
+      for (let j = 1; j < rows; j++) {
+        const gy = innerBot + (ih * j) / rows;
+        place(mk(sw, barW, depth * 0.85, style.frameMat), sc, gy);
+      }
+    }
+  });
+
+  if (style.molding) {
+    const mExtra = 0.09;
+    const mW = 0.05;
+    const mDepth = depth * 0.5;
+    const mFrom = from - mExtra, mTo = to + mExtra;
+    const mSillY = sillY - mExtra, mHeaderY = headerY + mExtra;
+    const mLen = mTo - mFrom;
+    const moh = mHeaderY - mSillY;
+    place(mk(mLen, mW, mDepth, style.moldingMat), c, mHeaderY - mW / 2);
+    place(mk(mLen, mW, mDepth, style.moldingMat), c, mSillY + mW / 2);
+    place(mk(mW, moh, mDepth, style.moldingMat), mFrom + mW / 2, (mSillY + mHeaderY) / 2);
+    place(mk(mW, moh, mDepth, style.moldingMat), mTo - mW / 2, (mSillY + mHeaderY) / 2);
+  }
+
+  return group;
+}
+
 const walls = new THREE.Group();
 scene.add(walls);
 
@@ -326,18 +453,14 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
         sill.position.set(fixed, SILL / 2, c);
       }
       group.add(sill);
-      // glass pane
-      let pane;
-      const paneH = headerY - SILL - 0.05;
-      if (orientation === 'x') {
-        pane = box(len - 0.1, paneH, 0.04, glassMat);
-        pane.position.set(c, SILL + paneH / 2 + 0.02, fixed);
-      } else {
-        pane = box(0.04, paneH, len - 0.1, glassMat);
-        pane.position.set(fixed, SILL + paneH / 2 + 0.02, c);
-      }
-      pane.castShadow = false;
-      group.add(pane);
+      // Build every window-style variant for this opening; only the active
+      // style is visible at a time (see the "Windows" toggle button below).
+      WINDOW_STYLES.forEach((style, i) => {
+        const variant = buildWindowVariant(orientation, fixed, cut.from, cut.to, SILL, headerY, style);
+        variant.visible = i === activeWindowStyle;
+        windowStyleGroups[i].push(variant);
+        group.add(variant);
+      });
     }
     if (cut.kind === 'archway') {
       // brick voussoir hint: a slim brick lip under the header
@@ -579,6 +702,7 @@ const btnTop = document.getElementById('btnTop');
 const btnWalk = document.getElementById('btnWalk');
 const btnLabels = document.getElementById('btnLabels');
 const btnRoof = document.getElementById('btnRoof');
+const btnWindowStyle = document.getElementById('btnWindowStyle');
 const hint = document.getElementById('hint');
 let roofOn = false;
 let roofOverrideHidden = false;
@@ -645,6 +769,14 @@ btnLabels.addEventListener('click', () => {
   labelGroup.visible = labelsOn;
   btnLabels.textContent = `Labels: ${labelsOn ? 'on' : 'off'}`;
   btnLabels.classList.toggle('active', labelsOn);
+});
+
+btnWindowStyle.addEventListener('click', () => {
+  activeWindowStyle = (activeWindowStyle + 1) % WINDOW_STYLES.length;
+  windowStyleGroups.forEach((group, i) => {
+    group.forEach((variant) => { variant.visible = i === activeWindowStyle; });
+  });
+  btnWindowStyle.textContent = `Windows: ${WINDOW_STYLES[activeWindowStyle].name}`;
 });
 
 /* ------------------------------ walk controls ---------------------------- */
