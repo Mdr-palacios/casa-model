@@ -1030,15 +1030,6 @@ function updateWalk(dt) {
   camera.position.y = 1.6;
 }
 
-/* ------------------------------ notes panel ------------------------------ */
-
-const notesToggle = document.getElementById('notesToggle');
-const notesPanel = document.getElementById('notesPanel');
-notesToggle.addEventListener('click', () => {
-  const open = notesPanel.classList.toggle('open');
-  notesToggle.textContent = `Assumptions & notes ${open ? '▴' : '▾'}`;
-});
-
 /* --------------------------------- resize --------------------------------- */
 
 window.addEventListener('resize', () => {

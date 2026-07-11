@@ -47,19 +47,6 @@
     box-shadow:0 8px 30px rgba(50,35,20,0.14);
   }
 
-  .header{
-    position:absolute; top:var(--space-4); left:var(--space-4);
-    padding:var(--space-3) var(--space-4);
-    max-width:320px;
-  }
-  .header h1{
-    font-family:var(--font-display); font-weight:600; font-size:var(--text-lg);
-    margin:0 0 2px 0; letter-spacing:-0.01em;
-  }
-  .header p{
-    font-size:var(--text-xs); color:var(--color-text-muted); margin:0; line-height:1.45;
-  }
-
   .controls{
     position:absolute; bottom:var(--space-4); left:var(--space-4);
     padding:var(--space-2);
@@ -88,26 +75,6 @@
   .legend-row{display:flex; align-items:center; gap:8px; font-size:var(--text-xs); margin-bottom:6px;}
   .swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
 
-  .notes-toggle{
-    position:absolute; top:var(--space-4); right:var(--space-4);
-    padding:8px 14px; font-size:var(--text-sm); font-weight:500; cursor:pointer;
-    display:flex; align-items:center; gap:6px;
-  }
-  .notes-panel{
-    position:absolute; top:64px; right:var(--space-4);
-    width:320px; max-height:70vh; overflow-y:auto;
-    padding:var(--space-4); font-size:var(--text-xs); line-height:1.55; color:var(--color-text);
-    transform:translateY(-8px); opacity:0; pointer-events:none;
-    transition:transform var(--transition-ui), opacity var(--transition-ui);
-  }
-  .notes-panel.open{ transform:translateY(0); opacity:1; pointer-events:auto; }
-  .notes-panel h3{font-size:var(--text-sm); margin:0 0 6px 0; font-family:var(--font-display); font-weight:600;}
-  .notes-panel h3.second{margin-top:14px;}
-  .notes-panel ul{margin:0; padding-left:16px;}
-  .notes-panel li{margin-bottom:5px;}
-  .tag-confirmed{color:#4c7a3f; font-weight:600;}
-  .tag-assumed{color:var(--color-primary-dark); font-weight:600;}
-
   .hint{
     position:absolute; top:var(--space-4); left:50%; transform:translateX(-50%);
     padding:6px 14px; font-size:var(--text-xs); color:var(--color-text-muted);
@@ -115,9 +82,7 @@
   }
 
   @media (max-width:640px){
-    .header{max-width:220px;}
     .legend{display:none;}
-    .notes-panel{width:82vw; right:var(--space-2);}
     .hint{display:none;}
   }
 </style>
@@ -127,39 +92,7 @@
 <div id="canvas-holder"></div>
 
 <div class="ui">
-  <div class="header panel">
-    <h1>Schematic house model</h1>
-    <p>Built from room descriptions &amp; the measurements you've shared so far — not final construction plans.</p>
-  </div>
-
   <div class="hint panel" id="hint">Drag to orbit · scroll to zoom · right-drag to pan</div>
-
-  <button class="notes-toggle panel" id="notesToggle" data-interactive>Assumptions &amp; notes ▾</button>
-  <div class="notes-panel panel" id="notesPanel">
-    <h3>What we actually know</h3>
-    <ul>
-      <li><span class="tag-confirmed">Confirmed</span> — the main entrance is a brick archway in the middle of the front facade, opening into the hallway; here it's shown as wide as the hallway itself.</li>
-      <li><span class="tag-confirmed">Confirmed</span> — the hallway between the two bedrooms is under 2m wide.</li>
-      <li><span class="tag-confirmed">Confirmed</span> — the kitchen has no direct exterior door; it's reached only through the hallway.</li>
-      <li><span class="tag-confirmed">Confirmed</span> — flow: entrance archway → hallway → living room → Ana's bedroom (bedroom 1), which has its own bathroom.</li>
-      <li><span class="tag-confirmed">Confirmed</span> — bedroom 2 is reached by walking the hallway past the kitchen, and also has its own bathroom.</li>
-      <li><span class="tag-confirmed">Confirmed</span> — construction is cinder block with brick accent courses and a concrete bond beam; the whole plot sits inside a cement perimeter fence.</li>
-      <li><span class="tag-confirmed">Confirmed</span> — the kitchen has exactly one window, on the north (front) wall, centered on the kitchen; the living room also has exactly one window, on the north wall, west of the living room's center.</li>
-    </ul>
-    <h3 class="second">What's estimated (placeholder, easy to correct)</h3>
-    <ul>
-      <li><span class="tag-assumed">Assumed</span> — overall room footprints (living room ~4.5×4.5m, kitchen ~4×4m, bedrooms ~4.5×4.5–5m).</li>
-      <li><span class="tag-assumed">Assumed</span> — wall thickness (15cm), ceiling height (2.6m), interior door widths (0.9m).</li>
-      <li><span class="tag-assumed">Assumed</span> — exact window sizes and the two bedroom windows' positions on the back wall (matching the tarp-covered ones seen in the exterior photos).</li>
-      <li><span class="tag-assumed">Assumed</span> — the ensuite bathroom sizes for both bedrooms, and the exact position of the living room's internal doorway from the hallway.</li>
-      <li><span class="tag-assumed">Assumed</span> — perimeter fence setback and gate position. Bedrooms are shown empty since exact furniture placement isn't confirmed yet.</li>
-    </ul>
-    <h3 class="second">To tighten this up</h3>
-    <ul>
-      <li>The measuring-tape photo (in the hallway between the bedrooms) would let us lock in the real hallway width and wall heights.</li>
-      <li>Any photo with the Apple Watch (45mm case) flat against a wall/floor gives a precise scale reference for the rest.</li>
-    </ul>
-  </div>
 
   <div class="controls">
     <button class="btn active" id="btnOrbit" data-interactive>Orbit view</button>
