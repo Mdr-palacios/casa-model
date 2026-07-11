@@ -401,17 +401,20 @@ wallRun('x', 0, HOUSE.x[0], HOUSE.x[1], [
   { from: 7.4, to: 8.6, kind: 'window' },   // kitchen window, centered on kitchen (6.0-10.0)
 ]);
 
-// Back wall (z=9): bedroom windows
-wallRun('x', 9, HOUSE.x[0], HOUSE.x[1], [
-  { from: 1.5, to: 2.7, kind: 'window' },
+// Back wall (z=9): solid — the bedrooms' windows are on their side walls
+// instead (west/east for bedroom 1, east for bedroom 2), not the back wall.
+wallRun('x', 9, HOUSE.x[0], HOUSE.x[1], []);
+
+// West wall (x=0): bedroom 1's west-facing exterior window
+wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], [
   { from: 7.0, to: 8.2, kind: 'window' },
 ]);
 
-// West wall (x=0): solid
-wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], []);
-
-// East wall (x=10): solid — kitchen's only window is on the north wall
-wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], []);
+// East wall (x=10): bedroom 2's east-facing exterior window (kitchen's
+// only window is on the north wall)
+wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], [
+  { from: 6.75, to: 7.95, kind: 'window' },
+]);
 
 // Living room / hallway partition (x=4.5, z 0-4.5): a pair of side-by-side
 // brick round arches spanning the FULL width of the wall (matching the
@@ -423,8 +426,11 @@ wallRun('z', 4.5, 0, 4.5, [
   { from: 2.75, to: 4.05, kind: 'brickArch', springY: 1.85, voussoirCount: 12 },
 ], brickMat);
 
-// Hallway(back)/bedroom1(back) partition (x=4.5, z 4.5-9): solid
-wallRun('z', 4.5, 4.5, 9, []);
+// Hallway(back)/bedroom1(back) partition (x=4.5, z 4.5-9): bedroom 1's
+// second window, on its east wall, looking into the hallway.
+wallRun('z', 4.5, 4.5, 9, [
+  { from: 7.0, to: 8.2, kind: 'window' },
+]);
 
 // Kitchen / hallway partition (x=6.0, z 0-4): rounded brick arch, matching
 // the width of the living room's northeast arch (1.3m, from the double-arch
