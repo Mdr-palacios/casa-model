@@ -26,7 +26,10 @@ const SILL = 0.9;    // window sill height
 const WIN_H = 2.1;   // window header height
 
 const HOUSE = { x: [0, 10], z: [0, 9] };
-const FENCE = { x: [-3.5, 13.5], z: [-3.5, 12.5], h: 2.0, t: 0.2 };
+// South side has no yard — the fence and house share the same southern wall,
+// so the fence's south edge lines up exactly with the house's back wall (z=9).
+// East, west, and north keep their yard setback.
+const FENCE = { x: [-3.5, 13.5], z: [-3.5, 9], h: 2.0, t: 0.2 };
 
 const COLORS = {
   block: 0xb7ae9d,
@@ -522,7 +525,10 @@ function fenceRun(orientation, fixed, start, end, gap) {
 }
 
 fenceRun('x', FENCE.z[0], FENCE.x[0], FENCE.x[1], { from: 3.5, to: 6.5 }); // front gate
-fenceRun('x', FENCE.z[1], FENCE.x[0], FENCE.x[1]);
+// South: no separate fence wall over the house's own width — the house's back
+// exterior wall IS the south property line there. Only fence the side-yard
+// slivers to the west and east of the house that continue past its footprint.
+fenceRun('x', FENCE.z[1], FENCE.x[0], FENCE.x[1], { from: HOUSE.x[0], to: HOUSE.x[1] });
 fenceRun('z', FENCE.x[0], FENCE.z[0], FENCE.z[1]);
 fenceRun('z', FENCE.x[1], FENCE.z[0], FENCE.z[1]);
 
