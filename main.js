@@ -14,7 +14,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
  *    - Middle strip, full depth: Hallway (<2m wide), runs past the
  *      kitchen, separates the two back bedrooms
  *    - Front-left:  Living room  (entered from the hallway)
- *    - Back-left:   Bedroom 1 "grandma's room" (via living room) + ensuite
+ *    - Back-left:   Bedroom 1 "Ana's room" (via living room) + ensuite
  *    - Front-right: Kitchen (entered from the hallway only)
  *    - Back-right:  Bedroom 2 (via the hallway) + ensuite
  * ------------------------------------------------------------------ */
@@ -56,10 +56,10 @@ const ROOMS = [
   { key: 'living', name: 'Sala', x: [0, 4.5], z: [0, 4.5] },
   { key: 'kitchen', name: 'Cocina', x: [6.0, 10.0], z: [0, 4.0] },
   { key: 'hallway', name: 'Pasillo', x: [4.5, 6.0], z: [0, 9.0] },
-  { key: 'bed1', name: 'Recámara 1 (Abuela)', x: [0, 4.5], z: [6.2, 9.0] },
+  { key: 'bed1', name: 'Recámara 1 (Ana)', x: [0, 4.5], z: [6.2, 9.0] },
   { key: 'bath1', name: 'Baño', x: [3.0, 4.5], z: [4.5, 6.2] },
   { key: 'bed1b', name: null, x: [0, 3.0], z: [4.5, 6.2], mergeInto: 'bed1' },
-  { key: 'bed2', name: 'Recámara 2', x: [6.0, 10.0], z: [5.7, 9.0] },
+  { key: 'bed2', name: 'Recámara 2 (Abuela Cande)', x: [6.0, 10.0], z: [5.7, 9.0] },
   { key: 'bath2', name: 'Baño', x: [8.5, 10.0], z: [4.0, 5.7] },
   { key: 'bed2b', name: null, x: [6.0, 8.5], z: [4.0, 5.7], mergeInto: 'bed2' },
 ];
@@ -174,7 +174,15 @@ function makeLabel(text, area = 16) {
   ctx.fillStyle = 'rgba(44,35,24,0.82)';
   roundRect(ctx, 8, 24, 496, 80, 24);
   ctx.fill();
-  ctx.font = `600 44px "General Sans", sans-serif`;
+  // Shrink the font to fit longer labels (e.g. names in parentheses) within
+  // the fixed-width canvas so text never gets clipped at the edges.
+  let fontSize = 44;
+  const maxTextWidth = 460;
+  ctx.font = `600 ${fontSize}px "General Sans", sans-serif`;
+  while (ctx.measureText(text).width > maxTextWidth && fontSize > 18) {
+    fontSize -= 2;
+    ctx.font = `600 ${fontSize}px "General Sans", sans-serif`;
+  }
   ctx.fillStyle = '#fdf6ee';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
