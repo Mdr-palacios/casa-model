@@ -423,13 +423,16 @@ wallRun('x', 4.0, 6.0, 10.0, []);
 // against the west exterior wall (x=0), so the entrance is right at that wall
 wallRun('x', 4.5, 0, 4.5, [{ from: 0, to: 0.9, kind: 'door' }]);
 
-// Bathroom partitions inside bedroom 1 (northeast corner)
-wallRun('z', 3.0, 4.5, 6.2, [{ from: 5.5, to: 6.2, kind: 'door' }], blockMat);
-wallRun('x', 6.2, 3.0, 4.5, [], blockMat);
+// Bathroom partitions inside bedroom 1 (northeast corner) — door is on the
+// SOUTH wall of the bathroom, in the southeast corner (flush against the
+// east exterior wall), matching the real house photos of this bathroom's door.
+wallRun('z', 3.0, 4.5, 6.2, [], blockMat);
+wallRun('x', 6.2, 3.0, 4.5, [{ from: 3.6, to: 4.5, kind: 'door' }], blockMat);
 
-// Bathroom partitions inside bedroom 2 (northeast corner, mirrored)
-wallRun('z', 8.5, 4.0, 5.7, [{ from: 5.0, to: 5.7, kind: 'door' }], blockMat);
-wallRun('x', 5.7, 8.5, 10.0, [], blockMat);
+// Bathroom partitions inside bedroom 2 (northeast corner, mirrored) — door on
+// the south wall, southeast corner, flush against the east exterior wall.
+wallRun('z', 8.5, 4.0, 5.7, [], blockMat);
+wallRun('x', 5.7, 8.5, 10.0, [{ from: 9.1, to: 10.0, kind: 'door' }], blockMat);
 
 /* Brick accent course — one horizontal stripe wrapping the living-room facade */
 (() => {
