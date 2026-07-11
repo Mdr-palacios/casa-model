@@ -126,6 +126,23 @@ scene.add(pad);
 
 /* --------------------------- room floors ---------------------------- */
 
+// Bathroom finishes — both ensuites (bath1, bath2) are finished with the
+// same real tile selection: glossy white "Bossa" marble-look slabs on every
+// wall, floor-to-ceiling, and the "Landstone" river-pebble mosaic on the
+// floor, matching the physical showroom samples and the approved mockup.
+const textureLoader = new THREE.TextureLoader();
+const bathWallTex = textureLoader.load('./textures/bath_wall_bossa.jpg');
+bathWallTex.wrapS = bathWallTex.wrapT = THREE.RepeatWrapping;
+bathWallTex.colorSpace = THREE.SRGBColorSpace;
+bathWallTex.repeat.set(1.4, 1.1); // large-format slabs — roughly one repeat per wall segment
+const bathWallMat = new THREE.MeshStandardMaterial({ map: bathWallTex, roughness: 0.22, metalness: 0.04 });
+
+const bathFloorTex = textureLoader.load('./textures/bath_floor_pebble.jpg');
+bathFloorTex.wrapS = bathFloorTex.wrapT = THREE.RepeatWrapping;
+bathFloorTex.colorSpace = THREE.SRGBColorSpace;
+bathFloorTex.repeat.set(3.2, 3.2); // small pebble-mosaic tiles repeat several times across the floor
+const bathFloorMat = new THREE.MeshStandardMaterial({ map: bathFloorTex, roughness: 0.8 });
+
 const labelGroup = new THREE.Group();
 scene.add(labelGroup);
 
@@ -133,9 +150,10 @@ ROOMS.forEach((r) => {
   if (!r.name) return; // merged sliver, no separate floor tint needed visually
   const w = r.x[1] - r.x[0];
   const d = r.z[1] - r.z[0];
+  const isBath = r.key === 'bath1' || r.key === 'bath2';
   const floor = new THREE.Mesh(
     new THREE.BoxGeometry(w - 0.02, 0.06, d - 0.02),
-    new THREE.MeshStandardMaterial({ color: ROOM_FLOOR[r.key] || 0xdddddd, roughness: 0.85 })
+    isBath ? bathFloorMat : new THREE.MeshStandardMaterial({ color: ROOM_FLOOR[r.key] || 0xdddddd, roughness: 0.85 })
   );
   floor.position.set((r.x[0] + r.x[1]) / 2, 0.15, (r.z[0] + r.z[1]) / 2);
   floor.receiveShadow = true;
@@ -538,18 +556,23 @@ scene.add(walls);
  * is a deliberate accent, not painted over.
  * BoxGeometry material slot order: [+x, -x, +y, -y, +z, -z].
  */
-function wallSegBox(orientation, fixed, w, h, d, extMat) {
+function wallSegBox(orientation, fixed, w, h, d, extMat, paintOverride = null) {
   if (extMat === brickMat) return box(w, h, d, extMat);
   const geo = new THREE.BoxGeometry(w, h, d);
+  // paintOverride lets a specific wall run swap the generic white paint for
+  // a room-specific finish (e.g. bathroom tile) on just one interior face,
+  // without affecting the room on the other side of the same wall.
+  const posPaint = paintOverride?.pos ?? paintMat;
+  const negPaint = paintOverride?.neg ?? paintMat;
   let mats;
   if (orientation === 'x') {
     const nzOutside = fixed === HOUSE.z[0];
     const pzOutside = fixed === HOUSE.z[1];
-    mats = [extMat, extMat, extMat, extMat, pzOutside ? extMat : paintMat, nzOutside ? extMat : paintMat];
+    mats = [extMat, extMat, extMat, extMat, pzOutside ? extMat : posPaint, nzOutside ? extMat : negPaint];
   } else {
     const nxOutside = fixed === HOUSE.x[0];
     const pxOutside = fixed === HOUSE.x[1];
-    mats = [pxOutside ? extMat : paintMat, nxOutside ? extMat : paintMat, extMat, extMat, extMat, extMat];
+    mats = [pxOutside ? extMat : posPaint, nxOutside ? extMat : negPaint, extMat, extMat, extMat, extMat];
   }
   const m = new THREE.Mesh(geo, mats);
   m.castShadow = true;
@@ -562,7 +585,7 @@ function wallSegBox(orientation, fixed, w, h, d, extMat) {
  * orientation 'x': wall runs along X at fixed z. orientation 'z': wall runs along Z at fixed x.
  * openings: [{ from, to, kind: 'door'|'window'|'archway' }]
  */
-function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) {
+function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat, paintOverride = null) {
   const cuts = [...openings].sort((a, b) => a.from - b.from);
   let cursor = start;
   const group = new THREE.Group();
@@ -575,10 +598,10 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
     const c = (a + b) / 2;
     let mesh;
     if (orientation === 'x') {
-      mesh = wallSegBox('x', fixed, len, height, T, mat);
+      mesh = wallSegBox('x', fixed, len, height, T, mat, paintOverride);
       mesh.position.set(c, cy, fixed);
     } else {
-      mesh = wallSegBox('z', fixed, T, height, len, mat);
+      mesh = wallSegBox('z', fixed, T, height, len, mat, paintOverride);
       mesh.position.set(fixed, cy, c);
     }
     group.add(mesh);
@@ -604,10 +627,10 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
     const headerMat = cut.kind === 'archway' || cut.kind === 'brickArch' ? brickMat : mat;
     let header;
     if (orientation === 'x') {
-      header = wallSegBox('x', fixed, len, hHeight, T, headerMat);
+      header = wallSegBox('x', fixed, len, hHeight, T, headerMat, paintOverride);
       header.position.set(c, headerY + hHeight / 2, fixed);
     } else {
-      header = wallSegBox('z', fixed, T, hHeight, len, headerMat);
+      header = wallSegBox('z', fixed, T, hHeight, len, headerMat, paintOverride);
       header.position.set(fixed, headerY + hHeight / 2, c);
     }
     group.add(header);
@@ -718,10 +741,15 @@ wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], [
 ]);
 
 // East wall (x=10): bedroom 2's east-facing exterior window (kitchen's
-// only window is on the north wall)
-wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], [
+// only window is on the north wall). Split at bath2's z-range (4.0-5.7) so
+// bath2's stretch of this exterior wall gets the tile finish on its interior
+// (-x) face, while the exterior (+x) face keeps the stucco finish everywhere
+// and the window stays on the bed2 portion untouched.
+wallRun('z', 10, 0, 4.0, []); // kitchen portion
+wallRun('z', 10, 4.0, 5.7, [], blockMat, { neg: bathWallMat }); // bath2 portion, interior -x face
+wallRun('z', 10, 5.7, HOUSE.z[1], [
   { from: 6.75, to: 7.95, kind: 'window', exterior: true },
-]);
+]); // bed2 portion
 
 // Living room / hallway partition (x=4.5, z 0-4.5): a pair of side-by-side
 // brick round arches spanning the FULL width of the wall (matching the
@@ -734,8 +762,12 @@ wallRun('z', 4.5, 0, 4.5, [
 ], brickMat);
 
 // Hallway(back)/bedroom1(back) partition (x=4.5, z 4.5-9): bedroom 1's
-// second window, on its east wall, looking into the hallway.
-wallRun('z', 4.5, 4.5, 9, [
+// second window, on its east wall, looking into the hallway. Split at the
+// bath1/bed1 boundary (z=6.2) so bath1's stretch of this wall can get the
+// tile finish on its face without changing the hallway-facing paint or the
+// bed1 portion (which keeps the window).
+wallRun('z', 4.5, 4.5, 6.2, [], blockMat, { neg: bathWallMat }); // bath1 side (interior, -x face)
+wallRun('z', 4.5, 6.2, 9, [
   { from: 7.0, to: 8.2, kind: 'window' },
 ]);
 
@@ -747,23 +779,34 @@ wallRun('z', 6.0, 0, 4.0, [{ from: 1.3, to: 2.6, kind: 'brickArch', springY: 1.8
 // Hallway / bedroom2 partition (x=6.0, z 4-9): door
 wallRun('z', 6.0, 4.0, 9.0, [{ from: 6.0, to: 6.9, kind: 'door' }]);
 
-// Kitchen / bedroom2 partition (z=4.0, x 6-10): solid
-wallRun('x', 4.0, 6.0, 10.0, []);
+// Kitchen / bedroom2 partition (z=4.0, x 6-10): solid. Split at the
+// kitchen/bath2 boundary (x=8.5) so bath2's stretch of this wall (its north
+// wall) can get the tile finish without affecting the kitchen side.
+wallRun('x', 4.0, 6.0, 8.5, []);
+wallRun('x', 4.0, 8.5, 10.0, [], blockMat, { pos: bathWallMat }); // bath2 north wall (+z face)
 
 // Living room / bedroom1 partition (z=4.5, x 0-4.5): door — moved flush
-// against the west exterior wall (x=0), so the entrance is right at that wall
-wallRun('x', 4.5, 0, 4.5, [{ from: 0, to: 0.9, kind: 'door' }]);
+// against the west exterior wall (x=0), so the entrance is right at that wall.
+// Split at the bed1b/bath1 boundary (x=3.0) so bath1's stretch of this wall
+// (the bathroom's north wall) can get the tile finish; the door stays on the
+// bed1b side, unaffected.
+wallRun('x', 4.5, 0, 3.0, [{ from: 0, to: 0.9, kind: 'door' }]);
+wallRun('x', 4.5, 3.0, 4.5, [], blockMat, { pos: bathWallMat }); // bath1 north wall (+z face)
 
 // Bathroom partitions inside bedroom 1 (northeast corner) — door is on the
 // SOUTH wall of the bathroom, in the southeast corner (flush against the
 // east exterior wall), matching the real house photos of this bathroom's door.
-wallRun('z', 3.0, 4.5, 6.2, [], blockMat);
-wallRun('x', 6.2, 3.0, 4.5, [{ from: 3.6, to: 4.5, kind: 'door' }], blockMat);
+// Both walls below are fully dedicated to bath1, so their bath1-facing side
+// gets the Bossa wall-tile finish floor-to-ceiling; the bed1/bed1b-facing
+// side keeps the plain painted finish.
+wallRun('z', 3.0, 4.5, 6.2, [], blockMat, { pos: bathWallMat }); // west wall, +x face = bath1 interior
+wallRun('x', 6.2, 3.0, 4.5, [{ from: 3.6, to: 4.5, kind: 'door' }], blockMat, { neg: bathWallMat }); // south wall, -z face = bath1 interior
 
 // Bathroom partitions inside bedroom 2 (northeast corner, mirrored) — door on
 // the south wall, southeast corner, flush against the east exterior wall.
-wallRun('z', 8.5, 4.0, 5.7, [], blockMat);
-wallRun('x', 5.7, 8.5, 10.0, [{ from: 9.1, to: 10.0, kind: 'door' }], blockMat);
+// Same tiling treatment as bath1 above.
+wallRun('z', 8.5, 4.0, 5.7, [], blockMat, { pos: bathWallMat }); // west wall, +x face = bath2 interior
+wallRun('x', 5.7, 8.5, 10.0, [{ from: 9.1, to: 10.0, kind: 'door' }], blockMat, { neg: bathWallMat }); // south wall, -z face = bath2 interior
 
 /* Brick accent course — one horizontal stripe wrapping the living-room facade */
 (() => {
