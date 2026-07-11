@@ -776,7 +776,7 @@ btnWindowStyle.addEventListener('click', () => {
   windowStyleGroups.forEach((group, i) => {
     group.forEach((variant) => { variant.visible = i === activeWindowStyle; });
   });
-  btnWindowStyle.textContent = `Windows: ${WINDOW_STYLES[activeWindowStyle].name}`;
+  btnWindowStyle.textContent = `Ventanas: ${WINDOW_STYLES[activeWindowStyle].name}`;
 });
 
 /* ------------------------------ walk controls ---------------------------- */

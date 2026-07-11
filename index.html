@@ -73,6 +73,12 @@
   }
   .btn:hover{ background:rgba(181,87,60,0.1); }
   .btn.active{ background:var(--color-primary); border-color:var(--color-primary); color:#fdf6ee; }
+  .btn-window-style{
+    font-size:var(--text-lg); font-weight:600; padding:16px 22px;
+    border-width:2px; border-color:var(--color-primary); color:var(--color-primary);
+    background:rgba(181,87,60,0.08);
+  }
+  .btn-window-style:hover{ background:rgba(181,87,60,0.18); }
 
   .legend{
     position:absolute; bottom:var(--space-4); right:var(--space-4);
@@ -161,7 +167,7 @@
     <button class="btn" id="btnWalk" data-interactive>Walk through</button>
     <button class="btn active" id="btnLabels" data-interactive>Labels: on</button>
     <button class="btn" id="btnRoof" data-interactive>Roof: off</button>
-    <button class="btn" id="btnWindowStyle" data-interactive>Windows: Caoba con cuadrícula</button>
+    <button class="btn btn-window-style" id="btnWindowStyle" data-interactive>Ventanas: Caoba con cuadrícula</button>
   </div>
 
   <div class="legend panel">
