@@ -413,8 +413,10 @@ wallRun('z', 4.5, 0, 4.5, [
 // Hallway(back)/bedroom1(back) partition (x=4.5, z 4.5-9): solid
 wallRun('z', 4.5, 4.5, 9, []);
 
-// Kitchen / hallway partition (x=6.0, z 0-4): door
-wallRun('z', 6.0, 0, 4.0, [{ from: 1.5, to: 2.4, kind: 'door' }]);
+// Kitchen / hallway partition (x=6.0, z 0-4): rounded brick arch, matching
+// the width of the living room's northeast arch (1.3m, from the double-arch
+// wall's first/north opening at z 0.45-1.75).
+wallRun('z', 6.0, 0, 4.0, [{ from: 1.3, to: 2.6, kind: 'brickArch', springY: 1.85, voussoirCount: 12 }]);
 
 // Hallway / bedroom2 partition (x=6.0, z 4-9): door
 wallRun('z', 6.0, 4.0, 9.0, [{ from: 6.0, to: 6.9, kind: 'door' }]);
