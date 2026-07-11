@@ -203,12 +203,42 @@ const slabMat = new THREE.MeshStandardMaterial({ color: COLORS.slab, roughness: 
 const fenceMat = new THREE.MeshStandardMaterial({ color: COLORS.fence, roughness: 0.95 });
 const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x8fb0c0, roughness: 0.15, transmission: 0.55, thickness: 0.05 });
 const benchMat = new THREE.MeshStandardMaterial({ color: COLORS.benchWood, roughness: 0.8 });
+// Interior plaster finish — painted white on every room-facing wall surface
+const paintMat = new THREE.MeshStandardMaterial({ color: 0xf3efe4, roughness: 0.92 });
 
 const walls = new THREE.Group();
 scene.add(walls);
 
 function box(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+/**
+ * Wall segment box whose room-facing side(s) are painted white, while any
+ * face that borders the exterior (a HOUSE perimeter boundary) keeps `extMat`
+ * (the stucco/block finish). Interior partition walls have rooms on both
+ * sides, so both large faces come out painted white. `extMat === brickMat`
+ * (the arch/pier feature) is left fully brick on every face — exposed brick
+ * is a deliberate accent, not painted over.
+ * BoxGeometry material slot order: [+x, -x, +y, -y, +z, -z].
+ */
+function wallSegBox(orientation, fixed, w, h, d, extMat) {
+  if (extMat === brickMat) return box(w, h, d, extMat);
+  const geo = new THREE.BoxGeometry(w, h, d);
+  let mats;
+  if (orientation === 'x') {
+    const nzOutside = fixed === HOUSE.z[0];
+    const pzOutside = fixed === HOUSE.z[1];
+    mats = [extMat, extMat, extMat, extMat, pzOutside ? extMat : paintMat, nzOutside ? extMat : paintMat];
+  } else {
+    const nxOutside = fixed === HOUSE.x[0];
+    const pxOutside = fixed === HOUSE.x[1];
+    mats = [pxOutside ? extMat : paintMat, nxOutside ? extMat : paintMat, extMat, extMat, extMat, extMat];
+  }
+  const m = new THREE.Mesh(geo, mats);
   m.castShadow = true;
   m.receiveShadow = true;
   return m;
@@ -232,10 +262,10 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
     const c = (a + b) / 2;
     let mesh;
     if (orientation === 'x') {
-      mesh = box(len, height, T, mat);
+      mesh = wallSegBox('x', fixed, len, height, T, mat);
       mesh.position.set(c, cy, fixed);
     } else {
-      mesh = box(T, height, len, mat);
+      mesh = wallSegBox('z', fixed, T, height, len, mat);
       mesh.position.set(fixed, cy, c);
     }
     group.add(mesh);
@@ -261,16 +291,16 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
     const headerMat = cut.kind === 'archway' || cut.kind === 'brickArch' ? brickMat : mat;
     let header;
     if (orientation === 'x') {
-      header = box(len, hHeight, T, headerMat);
+      header = wallSegBox('x', fixed, len, hHeight, T, headerMat);
       header.position.set(c, headerY + hHeight / 2, fixed);
     } else {
-      header = box(T, hHeight, len, headerMat);
+      header = wallSegBox('z', fixed, T, hHeight, len, headerMat);
       header.position.set(fixed, headerY + hHeight / 2, c);
     }
     group.add(header);
 
     if (cut.kind === 'brickArch') {
-      addArchVoussoirs(group, orientation, fixed, cut.from, cut.to, springY);
+      addArchVoussoirs(group, orientation, fixed, cut.from, cut.to, springY, cut.voussoirCount ?? 9);
     }
 
     if (cut.kind === 'window') {
@@ -368,12 +398,14 @@ wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], []);
 wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], [{ from: 1.5, to: 2.7, kind: 'window' }]);
 
 // Living room / hallway partition (x=4.5, z 0-4.5): a pair of side-by-side
-// brick round arches (matching the reference photo) with a shared brick
-// pier between them — the living room is reached by walking through either arch
+// brick round arches spanning the FULL width of the wall (matching the
+// reference photos) — end piers flush against the front wall (z=0) and the
+// bedroom-1 partition (z=4.5), with a shared center pier between the two
+// arches. The whole wall (piers + arches) is exposed brick, not painted.
 wallRun('z', 4.5, 0, 4.5, [
-  { from: 1.0, to: 1.9, kind: 'brickArch', springY: 1.85 },
-  { from: 2.3, to: 3.2, kind: 'brickArch', springY: 1.85 },
-]);
+  { from: 0.45, to: 1.75, kind: 'brickArch', springY: 1.85, voussoirCount: 12 },
+  { from: 2.75, to: 4.05, kind: 'brickArch', springY: 1.85, voussoirCount: 12 },
+], brickMat);
 
 // Hallway(back)/bedroom1(back) partition (x=4.5, z 4.5-9): solid
 wallRun('z', 4.5, 4.5, 9, []);
