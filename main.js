@@ -346,15 +346,188 @@ function buildWindowVariant(orientation, fixed, from, to, sillY, headerY, style)
   return group;
 }
 
-const walls = new THREE.Group();
-scene.add(walls);
-
 function box(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
   m.castShadow = true;
   m.receiveShadow = true;
   return m;
 }
+function placeBox(mesh, x, y, z) {
+  mesh.position.set(x, y, z);
+  return mesh;
+}
+
+/**
+ * Gate + matching window-bar ("rejas") style options — modeled after the
+ * reference photos of "portones modernos" the family shared for comparison.
+ * Each option pairs a front vehicle-gate design with a matching metal grille
+ * mounted on every EXTERIOR window, so switching styles previews both at
+ * once. Only exterior-facing windows get bars (the interior bedroom1-to-
+ * hallway window does not, since it's not a security-relevant opening).
+ */
+const GATE_STYLES = [
+  {
+    name: 'Panel sólido caoba',
+    kind: 'panel',
+    color: 0x4a3323,
+    metalness: 0.15,
+    roughness: 0.55,
+    barSpacing: 0.24,
+    ornateBars: false,
+  },
+  {
+    name: 'Barrotes verticales negros',
+    kind: 'bars',
+    color: 0x1c1c1c,
+    metalness: 0.5,
+    roughness: 0.35,
+    barSpacing: 0.13,
+    ornateBars: false,
+  },
+  {
+    name: 'Herrería con anillos',
+    kind: 'ornate',
+    color: 0x1a1a1a,
+    metalness: 0.55,
+    roughness: 0.3,
+    accentColor: 0xb8894a,
+    barSpacing: 0.27,
+    ornateBars: true,
+  },
+];
+GATE_STYLES.forEach((s) => {
+  s.mat = new THREE.MeshStandardMaterial({ color: s.color, metalness: s.metalness, roughness: s.roughness });
+  if (s.accentColor) s.accentMat = new THREE.MeshStandardMaterial({ color: s.accentColor, metalness: 0.6, roughness: 0.3 });
+});
+let activeGateStyle = 0;
+// gateStyleGroups[i] = the gate-leaf group for style i (built once GATE is
+// known, in the fence section below). windowBarGroups[i] = every window-bar
+// grille mesh built for style i across the whole house.
+const gateStyleGroups = [];
+const windowBarGroups = [[], [], []];
+
+/**
+ * Build a security-bar grille for one exterior window opening, sized a bit
+ * larger than the opening and mounted just outside the wall face (standard
+ * practice for "rejas" in this kind of construction).
+ */
+function buildWindowBarsVariant(orientation, fixed, from, to, sillY, headerY, style) {
+  const group = new THREE.Group();
+  const margin = 0.06;
+  const bFrom = from - margin, bTo = to + margin;
+  const bSill = sillY - margin, bHeader = headerY + margin;
+  const len = bTo - bFrom;
+  const oh = bHeader - bSill;
+  const c = (bFrom + bTo) / 2;
+  const sign = orientation === 'x' ? (fixed === HOUSE.z[0] ? -1 : 1) : (fixed === HOUSE.x[0] ? -1 : 1);
+  const standoff = fixed + sign * (T / 2 + 0.06);
+  const barThick = 0.035;
+  const railThick = 0.045;
+  const depth = 0.03;
+
+  const mk = (l, h, d, mat) => (orientation === 'x' ? box(l, h, d, mat) : box(d, h, l, mat));
+  const place = (mesh, alongPos, y) => {
+    if (orientation === 'x') mesh.position.set(alongPos, y, standoff);
+    else mesh.position.set(standoff, y, alongPos);
+    group.add(mesh);
+  };
+
+  // frame: top & bottom rails + two side stiles
+  place(mk(len, railThick, depth, style.mat), c, bHeader - railThick / 2);
+  place(mk(len, railThick, depth, style.mat), c, bSill + railThick / 2);
+  place(mk(railThick, oh, depth, style.mat), bFrom + railThick / 2, (bSill + bHeader) / 2);
+  place(mk(railThick, oh, depth, style.mat), bTo - railThick / 2, (bSill + bHeader) / 2);
+
+  const innerFrom = bFrom + railThick, innerTo = bTo - railThick;
+  const innerLen = innerTo - innerFrom;
+  const barCount = Math.max(3, Math.round(innerLen / style.barSpacing));
+  for (let i = 1; i < barCount; i++) {
+    const bx = innerFrom + (innerLen * i) / barCount;
+    place(mk(style.ornateBars ? barThick * 1.3 : barThick, oh, depth, style.mat), bx, (bSill + bHeader) / 2);
+  }
+
+  if (style.ornateBars) {
+    const midY = (bSill + bHeader) / 2;
+    place(mk(len, railThick * 0.8, depth, style.mat), c, midY);
+    for (let i = 0; i < barCount; i++) {
+      const rx = innerFrom + (innerLen * (i + 0.5)) / barCount;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 8, 16), style.accentMat);
+      if (orientation === 'x') {
+        ring.position.set(rx, midY, standoff);
+      } else {
+        ring.rotation.y = Math.PI / 2;
+        ring.position.set(standoff, midY, rx);
+      }
+      group.add(ring);
+    }
+  }
+
+  return group;
+}
+
+/**
+ * Build the pair of front-gate leaves for one gate style, spanning the GATE
+ * opening in the north fence wall. 'panel' = solid mahogany-look panel with
+ * decorative reveal grooves; 'bars'/'ornate' = a bar grille, with 'ornate'
+ * adding a horizontal mid-rail and ring accents matching the window grilles.
+ */
+function buildGateLeaves(style) {
+  const group = new THREE.Group();
+  const leafH = FENCE.h - 0.1;
+  const y0 = leafH / 2 + 0.05;
+  const zPos = FENCE.z[0];
+  const gap = 0.04;
+  const mid = (GATE.from + GATE.to) / 2;
+  const leaves = [
+    { from: GATE.from, to: mid - gap / 2, innerAtTo: true },
+    { from: mid + gap / 2, to: GATE.to, innerAtTo: false },
+  ];
+  const depth = 0.06;
+  const railThick = 0.08;
+
+  leaves.forEach((lf) => {
+    const w = lf.to - lf.from;
+    const c = (lf.from + lf.to) / 2;
+    if (style.kind === 'panel') {
+      group.add(placeBox(box(w, leafH, depth, style.mat), c, y0, zPos));
+      const grooveMat = new THREE.MeshStandardMaterial({ color: 0x2e1f14, roughness: 0.7 });
+      [0.32, 0.68].forEach((f) => {
+        group.add(placeBox(box(0.03, leafH - 0.16, depth + 0.005, grooveMat), lf.from + w * f, y0, zPos));
+      });
+      const handleMat = new THREE.MeshStandardMaterial({ color: 0xc7c0ac, metalness: 0.6, roughness: 0.3 });
+      const innerEdge = lf.innerAtTo ? lf.to - 0.12 : lf.from + 0.12;
+      group.add(placeBox(box(0.03, 0.5, depth + 0.03, handleMat), innerEdge, y0, zPos));
+    } else {
+      group.add(placeBox(box(w, railThick, depth, style.mat), c, y0 + leafH / 2 - railThick / 2, zPos));
+      group.add(placeBox(box(w, railThick, depth, style.mat), c, y0 - leafH / 2 + railThick / 2, zPos));
+      group.add(placeBox(box(railThick, leafH, depth, style.mat), lf.from + railThick / 2, y0, zPos));
+      group.add(placeBox(box(railThick, leafH, depth, style.mat), lf.to - railThick / 2, y0, zPos));
+
+      const innerFrom = lf.from + railThick, innerTo = lf.to - railThick;
+      const innerW = innerTo - innerFrom;
+      const barCount = Math.max(3, Math.round(innerW / style.barSpacing));
+      const barH = leafH - railThick * 2;
+      for (let i = 1; i < barCount; i++) {
+        const bx = innerFrom + (innerW * i) / barCount;
+        group.add(placeBox(box(0.03, barH, depth * 0.8, style.mat), bx, y0, zPos));
+      }
+      if (style.ornateBars) {
+        group.add(placeBox(box(w - railThick * 2, 0.06, depth * 0.8, style.mat), c, y0, zPos));
+        for (let i = 0; i < barCount; i++) {
+          const rx = innerFrom + (innerW * (i + 0.5)) / barCount;
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 8, 16), style.accentMat);
+          ring.position.set(rx, y0, zPos);
+          group.add(ring);
+        }
+      }
+    }
+  });
+
+  return group;
+}
+
+const walls = new THREE.Group();
+scene.add(walls);
 
 /**
  * Wall segment box whose room-facing side(s) are painted white, while any
@@ -461,6 +634,17 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
         windowStyleGroups[i].push(variant);
         group.add(variant);
       });
+      // Exterior windows also get a matching security-bar grille for each
+      // gate style (see the "Portón y rejas" toggle button below); the
+      // interior bed1-to-hallway window is skipped since it's not exposed.
+      if (cut.exterior) {
+        GATE_STYLES.forEach((style, i) => {
+          const bars = buildWindowBarsVariant(orientation, fixed, cut.from, cut.to, SILL, headerY, style);
+          bars.visible = i === activeGateStyle;
+          windowBarGroups[i].push(bars);
+          group.add(bars);
+        });
+      }
     }
     if (cut.kind === 'archway') {
       // brick voussoir hint: a slim brick lip under the header
@@ -519,9 +703,9 @@ function addArchVoussoirs(group, orientation, fixed, from, to, springY, count = 
 // Living room window sits west of that room's center; kitchen window is
 // centered on the kitchen's stretch of this wall.
 wallRun('x', 0, HOUSE.x[0], HOUSE.x[1], [
-  { from: 0.9, to: 2.1, kind: 'window' },   // living room window, west of room center (2.25)
+  { from: 0.9, to: 2.1, kind: 'window', exterior: true },   // living room window, west of room center (2.25)
   { from: 4.5, to: 6.0, kind: 'archway' },  // main entrance, into the hallway
-  { from: 7.4, to: 8.6, kind: 'window' },   // kitchen window, centered on kitchen (6.0-10.0)
+  { from: 7.4, to: 8.6, kind: 'window', exterior: true },   // kitchen window, centered on kitchen (6.0-10.0)
 ]);
 
 // Back wall (z=9): solid — the bedrooms' windows are on their side walls
@@ -530,13 +714,13 @@ wallRun('x', 9, HOUSE.x[0], HOUSE.x[1], []);
 
 // West wall (x=0): bedroom 1's west-facing exterior window
 wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], [
-  { from: 7.0, to: 8.2, kind: 'window' },
+  { from: 7.0, to: 8.2, kind: 'window', exterior: true },
 ]);
 
 // East wall (x=10): bedroom 2's east-facing exterior window (kitchen's
 // only window is on the north wall)
 wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], [
-  { from: 6.75, to: 7.95, kind: 'window' },
+  { from: 6.75, to: 7.95, kind: 'window', exterior: true },
 ]);
 
 // Living room / hallway partition (x=4.5, z 0-4.5): a pair of side-by-side
@@ -685,6 +869,16 @@ fenceRun('x', FENCE.z[0], FENCE.x[0], FENCE.x[1], [GATE, PED_DOOR]); // front ga
   leaf.position.set((PED_DOOR.from + PED_DOOR.to) / 2, h / 2, FENCE.z[0]);
   scene.add(leaf);
 })();
+
+// Front vehicle gate leaves — all 3 style options are built now that GATE is
+// known; only the active one is visible at a time (see the "Portón y rejas"
+// toggle button below), matching whichever window-bar grille is showing.
+GATE_STYLES.forEach((style, i) => {
+  const leaves = buildGateLeaves(style);
+  leaves.visible = i === activeGateStyle;
+  scene.add(leaves);
+  gateStyleGroups.push(leaves);
+});
 // South: no separate fence wall over the house's own width — the house's back
 // exterior wall IS the south property line there. Only fence the side-yard
 // slivers to the west and east of the house that continue past its footprint.
@@ -703,6 +897,7 @@ const btnWalk = document.getElementById('btnWalk');
 const btnLabels = document.getElementById('btnLabels');
 const btnRoof = document.getElementById('btnRoof');
 const btnWindowStyle = document.getElementById('btnWindowStyle');
+const btnGateStyle = document.getElementById('btnGateStyle');
 const hint = document.getElementById('hint');
 let roofOn = false;
 let roofOverrideHidden = false;
@@ -777,6 +972,15 @@ btnWindowStyle.addEventListener('click', () => {
     group.forEach((variant) => { variant.visible = i === activeWindowStyle; });
   });
   btnWindowStyle.textContent = `Ventanas: ${WINDOW_STYLES[activeWindowStyle].name}`;
+});
+
+btnGateStyle.addEventListener('click', () => {
+  activeGateStyle = (activeGateStyle + 1) % GATE_STYLES.length;
+  gateStyleGroups.forEach((leaves, i) => { leaves.visible = i === activeGateStyle; });
+  windowBarGroups.forEach((group, i) => {
+    group.forEach((variant) => { variant.visible = i === activeGateStyle; });
+  });
+  btnGateStyle.textContent = `Portón y rejas: ${GATE_STYLES[activeGateStyle].name}`;
 });
 
 /* ------------------------------ walk controls ---------------------------- */
