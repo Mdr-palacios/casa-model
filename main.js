@@ -389,11 +389,14 @@ function addArchVoussoirs(group, orientation, fixed, from, to, springY, count = 
 
 /* ------------------------------ walls -------------------------------- */
 
-// Front wall (z=0): single main entrance — a brick archway into the
-// hallway, in the middle of the facade, as wide as the hallway itself.
-// Living room and kitchen have no direct exterior access.
+// Front/north wall (z=0): main entrance archway in the middle, plus one
+// window each for the living room and kitchen (both single-window rooms).
+// Living room window sits west of that room's center; kitchen window is
+// centered on the kitchen's stretch of this wall.
 wallRun('x', 0, HOUSE.x[0], HOUSE.x[1], [
-  { from: 4.5, to: 6.0, kind: 'archway' },
+  { from: 0.9, to: 2.1, kind: 'window' },   // living room window, west of room center (2.25)
+  { from: 4.5, to: 6.0, kind: 'archway' },  // main entrance, into the hallway
+  { from: 7.4, to: 8.6, kind: 'window' },   // kitchen window, centered on kitchen (6.0-10.0)
 ]);
 
 // Back wall (z=9): bedroom windows
@@ -405,8 +408,8 @@ wallRun('x', 9, HOUSE.x[0], HOUSE.x[1], [
 // West wall (x=0): solid
 wallRun('z', 0, HOUSE.z[0], HOUSE.z[1], []);
 
-// East wall (x=10): kitchen window
-wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], [{ from: 1.5, to: 2.7, kind: 'window' }]);
+// East wall (x=10): solid — kitchen's only window is on the north wall
+wallRun('z', 10, HOUSE.z[0], HOUSE.z[1], []);
 
 // Living room / hallway partition (x=4.5, z 0-4.5): a pair of side-by-side
 // brick round arches spanning the FULL width of the wall (matching the
