@@ -222,7 +222,7 @@ const paintMat = new THREE.MeshStandardMaterial({ color: 0xf3efe4, roughness: 0.
 /**
  * Window style options — modeled after the reference photos shared for
  * comparison. Every window opening in the house gets all four variants
- * built, and only one is shown at a time via the "Windows" toggle button
+ * built, and only one is shown at a time via the "Ventanas" toggle button
  * so they can be compared side by side without changing the model.
  */
 const WINDOW_STYLES = [
@@ -454,7 +454,7 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat) 
       }
       group.add(sill);
       // Build every window-style variant for this opening; only the active
-      // style is visible at a time (see the "Windows" toggle button below).
+      // style is visible at a time (see the "Ventanas" toggle button below).
       WINDOW_STYLES.forEach((style, i) => {
         const variant = buildWindowVariant(orientation, fixed, cut.from, cut.to, SILL, headerY, style);
         variant.visible = i === activeWindowStyle;
