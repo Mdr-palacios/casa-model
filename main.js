@@ -212,6 +212,8 @@ const blockMat = new THREE.MeshStandardMaterial({ color: COLORS.block, roughness
 const brickMat = new THREE.MeshStandardMaterial({ color: COLORS.brick, roughness: 0.85 });
 const slabMat = new THREE.MeshStandardMaterial({ color: COLORS.slab, roughness: 0.9 });
 const fenceMat = new THREE.MeshStandardMaterial({ color: COLORS.fence, roughness: 0.95 });
+// Unfinished plywood pedestrian door set into the fence, next to the vehicle gate
+const plywoodDoorMat = new THREE.MeshStandardMaterial({ color: 0xcdae7d, roughness: 0.8 });
 const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x8fb0c0, roughness: 0.15, transmission: 0.55, thickness: 0.05 });
 const benchMat = new THREE.MeshStandardMaterial({ color: COLORS.benchWood, roughness: 0.8 });
 // Interior plaster finish — painted white on every room-facing wall surface
@@ -513,8 +515,8 @@ addCounter(6.4, 9.6, 0.5);            // kitchen counter along the front-right w
 
 /* ------------------------------ perimeter fence ------------------------- */
 
-function fenceRun(orientation, fixed, start, end, gap) {
-  const cuts = gap ? [gap] : [];
+function fenceRun(orientation, fixed, start, end, gaps) {
+  const cuts = Array.isArray(gaps) ? gaps : gaps ? [gaps] : [];
   let cursor = start;
   const add = (a, b) => {
     if (b - a <= 0.01) return;
@@ -537,7 +539,23 @@ function fenceRun(orientation, fixed, start, end, gap) {
   add(cursor, end);
 }
 
-fenceRun('x', FENCE.z[0], FENCE.x[0], FENCE.x[1], { from: 3.5, to: 6.5 }); // front gate
+// Front gate opening, plus a separate pedestrian door immediately to the
+// east of it (matching the reference photos: plywood door set in the block
+// wall right next to the vehicle gate's brick-infilled opening).
+const GATE = { from: 3.5, to: 6.5 };
+const PED_DOOR = { from: GATE.to, to: GATE.to + 0.9 };
+fenceRun('x', FENCE.z[0], FENCE.x[0], FENCE.x[1], [GATE, PED_DOOR]); // front gate + pedestrian door
+
+// Pedestrian door leaf — a flat plywood-toned panel filling the door
+// opening, slightly inset from the full opening width/height for a frame
+// reveal, matching the unfinished-plywood look in the reference photos.
+(() => {
+  const w = (PED_DOOR.to - PED_DOOR.from) - 0.08;
+  const h = FENCE.h - 0.1;
+  const leaf = box(w, h, 0.06, plywoodDoorMat);
+  leaf.position.set((PED_DOOR.from + PED_DOOR.to) / 2, h / 2, FENCE.z[0]);
+  scene.add(leaf);
+})();
 // South: no separate fence wall over the house's own width — the house's back
 // exterior wall IS the south property line there. Only fence the side-yard
 // slivers to the west and east of the house that continue past its footprint.
