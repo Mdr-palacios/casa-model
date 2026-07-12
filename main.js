@@ -375,6 +375,135 @@ function buildWindowVariant(orientation, fixed, from, to, sillY, headerY, style)
   return group;
 }
 
+/**
+ * Front-door style options for the main entrance opening — modeled after
+ * the grand mahogany double door mom picked (glazed divided-lite upper
+ * section over a solid raised panel, dark bronze lever hardware). Only
+ * the single main-entrance opening gets these variants; toggling the
+ * "Puerta principal" button cycles between the new door and the original
+ * open-arch look with no door leaf at all.
+ */
+const DOOR_STYLES = [
+  {
+    // Matches the reference photo: dark mahogany double door, each leaf a
+    // 2-col x 3-row divided-lite glazed upper section over a solid raised
+    // panel. Kept first so it's the default shown on load (activeDoorStyle
+    // = 0 below).
+    name: 'Doble caoba con vidrio (elegida)',
+    hasDoor: true,
+    frameColor: 0x5c3320,
+    panelColor: 0x6b3d24,
+    glassColor: 0x2c3036,
+    handleColor: 0x2b2118,
+    grid: { cols: 2, rows: 3 },
+    frameW: 0.09,
+  },
+  {
+    name: 'Sin puerta (arco abierto)',
+    hasDoor: false,
+  },
+];
+DOOR_STYLES.forEach((s) => {
+  if (!s.hasDoor) return;
+  s.frameMat = new THREE.MeshStandardMaterial({ color: s.frameColor, roughness: 0.65, metalness: 0.05 });
+  s.panelMat = new THREE.MeshStandardMaterial({ color: s.panelColor, roughness: 0.6, metalness: 0.05 });
+  s.glassMat = new THREE.MeshPhysicalMaterial({ color: s.glassColor, roughness: 0.15, transmission: 0.45, thickness: 0.05 });
+  s.handleMat = new THREE.MeshStandardMaterial({ color: s.handleColor, roughness: 0.35, metalness: 0.65 });
+});
+// doorStyleGroups[i] holds the door-leaf group for style i (there's only
+// one main-entrance opening, but this mirrors the window/gate pattern so
+// the same toggle logic works everywhere).
+const doorStyleGroups = [[], []];
+let activeDoorStyle = 0;
+
+/**
+ * Build one door-style variant (frame casing + two leaves, each with a
+ * solid raised lower panel, a divided-lite glazed upper section, and a
+ * lever handle) for the main entrance opening. hasDoor:false styles return
+ * an empty group, replicating the original open-archway look.
+ */
+function buildDoorVariant(orientation, fixed, from, to, floorY, headerY, style) {
+  const group = new THREE.Group();
+  if (!style.hasDoor) return group;
+
+  const c = (from + to) / 2;
+  const fw = style.frameW;
+  const depth = T * 0.85;
+  const oh = headerY - floorY;
+
+  const mk = (l, h, d, mat) => (orientation === 'x' ? box(l, h, d, mat) : box(d, h, l, mat));
+  const place = (mesh, alongPos, y) => {
+    if (orientation === 'x') mesh.position.set(alongPos, y, fixed);
+    else mesh.position.set(fixed, y, alongPos);
+    group.add(mesh);
+  };
+
+  // outer casing (header trim + two side jambs) around the opening
+  place(mk(to - from, fw, depth, style.frameMat), c, headerY - fw / 2);
+  place(mk(fw, oh, depth, style.frameMat), from + fw / 2, (floorY + headerY) / 2);
+  place(mk(fw, oh, depth, style.frameMat), to - fw / 2, (floorY + headerY) / 2);
+
+  const gap = 0.02;
+  const innerFrom = from + fw, innerTo = to - fw;
+  const mid = (innerFrom + innerTo) / 2;
+  const leaves = [
+    { a: innerFrom, b: mid - gap / 2, side: -1 },
+    { a: mid + gap / 2, b: innerTo, side: 1 },
+  ];
+
+  const stileW = fw * 0.75;
+  const railH = fw * 0.65;
+  const panelTopY = floorY + oh * 0.42;
+
+  leaves.forEach((lf) => {
+    const w = lf.b - lf.a;
+    const lc = (lf.a + lf.b) / 2;
+
+    // stiles (left/right uprights of the leaf)
+    place(mk(stileW, oh, depth * 0.9, style.frameMat), lf.a + stileW / 2, (floorY + headerY) / 2);
+    place(mk(stileW, oh, depth * 0.9, style.frameMat), lf.b - stileW / 2, (floorY + headerY) / 2);
+    // bottom, mid (panel/glass divider) and top rails
+    place(mk(w, railH, depth * 0.9, style.frameMat), lc, floorY + railH / 2);
+    place(mk(w, railH, depth * 0.9, style.frameMat), lc, panelTopY);
+    place(mk(w, railH, depth * 0.9, style.frameMat), lc, headerY - railH / 2);
+
+    // solid raised lower panel (double-boxed for a subtle inset detail)
+    const panelW = w - stileW * 2;
+    const panelH = (panelTopY - railH / 2) - (floorY + railH / 2);
+    const panelCy = (floorY + railH / 2 + panelTopY - railH / 2) / 2;
+    place(mk(panelW, panelH, depth * 0.55, style.panelMat), lc, panelCy);
+    place(mk(panelW * 0.72, panelH * 0.68, depth * 0.62, style.panelMat), lc, panelCy);
+
+    // upper glazed section with divided lites
+    const gBot = panelTopY + railH / 2, gTop = headerY - railH;
+    const gH = gTop - gBot;
+    const glassFrom = lf.a + stileW, glassTo = lf.b - stileW;
+    const glassW = glassTo - glassFrom;
+    place(mk(glassW - 0.01, gH - 0.01, 0.03, style.glassMat), lc, (gTop + gBot) / 2);
+
+    const { cols, rows } = style.grid;
+    const barW = fw * 0.4;
+    for (let i = 1; i < cols; i++) {
+      const gx = glassFrom + (glassW * i) / cols;
+      place(mk(barW, gH, depth * 0.6, style.frameMat), gx, (gTop + gBot) / 2);
+    }
+    for (let j = 1; j < rows; j++) {
+      const gy = gBot + (gH * j) / rows;
+      place(mk(glassW, barW, depth * 0.6, style.frameMat), lc, gy);
+    }
+
+    // lever handle near the center meeting edge, at typical door-handle height
+    const handleY = floorY + 1.0;
+    const handleAlong = lf.side < 0 ? lf.b - 0.05 : lf.a + 0.05;
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.16, 8), style.handleMat);
+    if (orientation === 'x') handle.rotation.z = Math.PI / 2;
+    else handle.rotation.x = Math.PI / 2;
+    place(handle, handleAlong, handleY);
+  });
+
+  return group;
+}
+
 function box(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
   m.castShadow = true;
@@ -692,6 +821,16 @@ function wallRun(orientation, fixed, start, end, openings = [], mat = blockMat, 
         lip.position.set(fixed, headerY - lipH / 2, c);
       }
       group.add(lip);
+
+      // Build every front-door style variant for this opening; only the
+      // active style is visible at a time (see the "Puerta principal"
+      // toggle button below). hasDoor:false renders nothing (open arch).
+      DOOR_STYLES.forEach((style, i) => {
+        const variant = buildDoorVariant(orientation, fixed, cut.from, cut.to, 0, headerY, style);
+        variant.visible = i === activeDoorStyle;
+        doorStyleGroups[i].push(variant);
+        group.add(variant);
+      });
     }
   });
 
@@ -951,7 +1090,9 @@ const btnWalk = document.getElementById('btnWalk');
 const btnLabels = document.getElementById('btnLabels');
 const btnRoof = document.getElementById('btnRoof');
 const btnWindowStyle = document.getElementById('btnWindowStyle');
+const btnDoorStyle = document.getElementById('btnDoorStyle');
 const btnGateStyle = document.getElementById('btnGateStyle');
+const btnStyleOptions = document.getElementById('btnStyleOptions');
 const hint = document.getElementById('hint');
 let roofOn = false;
 let roofOverrideHidden = false;
@@ -1035,6 +1176,26 @@ btnGateStyle.addEventListener('click', () => {
     group.forEach((variant) => { variant.visible = i === activeGateStyle; });
   });
   btnGateStyle.textContent = `Portón y rejas: ${GATE_STYLES[activeGateStyle].name}`;
+});
+
+btnDoorStyle.addEventListener('click', () => {
+  activeDoorStyle = (activeDoorStyle + 1) % DOOR_STYLES.length;
+  doorStyleGroups.forEach((group, i) => {
+    group.forEach((variant) => { variant.visible = i === activeDoorStyle; });
+  });
+  btnDoorStyle.textContent = `Puerta principal: ${DOOR_STYLES[activeDoorStyle].name}`;
+});
+
+// The style-comparison toggle buttons (windows/door/gate) stay hidden by
+// default so a first-time visitor just sees the chosen final look — this
+// master switch reveals them for side-by-side style comparisons.
+let styleOptionsOn = false;
+const styleToggleButtons = [btnWindowStyle, btnDoorStyle, btnGateStyle];
+btnStyleOptions.addEventListener('click', () => {
+  styleOptionsOn = !styleOptionsOn;
+  styleToggleButtons.forEach((b) => b.classList.toggle('show', styleOptionsOn));
+  btnStyleOptions.textContent = `Ver opciones de estilo: ${styleOptionsOn ? 'activado' : 'desactivado'}`;
+  btnStyleOptions.classList.toggle('active', styleOptionsOn);
 });
 
 /* ------------------------------ walk controls ---------------------------- */
