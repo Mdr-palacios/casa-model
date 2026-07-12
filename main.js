@@ -245,6 +245,17 @@ const paintMat = new THREE.MeshStandardMaterial({ color: 0xf3efe4, roughness: 0.
  */
 const WINDOW_STYLES = [
   {
+    // Matches the exact door+window combo mom picked (mahogany wood frame,
+    // dark tinted glass, plain panes split only by the center mullion —
+    // no grid bars). Kept first in the array so it's the default variant
+    // shown when the page loads (activeWindowStyle = 0 below).
+    name: 'Caoba sin cuadrícula (elegido)',
+    frameColor: 0x7b4230,
+    glassColor: 0x45483f,
+    grid: null,
+    frameW: 0.065,
+  },
+  {
     name: 'Caoba con cuadrícula',
     frameColor: 0x6b3a22,
     glassColor: 0x333f49,
@@ -286,7 +297,7 @@ WINDOW_STYLES.forEach((s) => {
 });
 // windowStyleGroups[i] holds every built variant-i mesh group across the whole
 // house; toggling styles just flips `.visible` on these, no rebuilding needed.
-const windowStyleGroups = [[], [], [], []];
+const windowStyleGroups = [[], [], [], [], []];
 let activeWindowStyle = 0;
 
 /**
