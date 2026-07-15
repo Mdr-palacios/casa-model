@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gastos de la Casa</title>
+<meta name="description" content="Registro de gastos de la construcción de la casa, para que toda la familia pueda ver en qué se ha usado el dinero." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=General+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --font-display: 'Fraunces', serif;
+    --font-body: 'General Sans', -apple-system, sans-serif;
+    --color-bg: #efe7d8;
+    --color-surface: rgba(255,250,240,0.82);
+    --color-surface-solid: #fdf9f1;
+    --color-border: rgba(60,45,30,0.14);
+    --color-text: #2c2318;
+    --color-text-muted: #6b5c47;
+    --color-primary: #b5573c;
+    --color-primary-dark: #8a3f2a;
+    --text-xs: 12px;
+    --text-sm: 13px;
+    --text-base: 15px;
+    --text-lg: 18px;
+    --text-xl: 24px;
+    --text-2xl: 34px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --panel-radius: 14px;
+    --transition-ui: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    --cat-materiales: #c9973f;
+    --cat-mano-de-obra: #b5573c;
+    --cat-puertas: #5b7d8a;
+    --cat-otros: #7a9269;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:var(--font-body);background:var(--color-bg);color:var(--color-text);}
+  body{
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(181,87,60,0.10), transparent 45%),
+      radial-gradient(circle at 88% 92%, rgba(122,146,105,0.12), transparent 45%);
+    padding-bottom:var(--space-8);
+  }
+
+  a{color:var(--color-primary-dark); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  .panel{
+    background:var(--color-surface);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--color-border);
+    border-radius:var(--panel-radius);
+    box-shadow:0 8px 30px rgba(50,35,20,0.10);
+  }
+
+  header.top{
+    max-width:960px; margin:0 auto; padding:var(--space-6) var(--space-4) var(--space-3);
+    display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand svg{width:30px;height:30px;flex-shrink:0;color:var(--color-primary);}
+  .brand span{font-family:var(--font-display); font-weight:600; font-size:var(--text-lg); color:var(--color-text);}
+  nav.top-links{display:flex; gap:var(--space-4); font-size:var(--text-sm); font-weight:500;}
+  nav.top-links a.current{color:var(--color-text); text-decoration:none; border-bottom:2px solid var(--color-primary); padding-bottom:2px;}
+
+  main{max-width:960px; margin:0 auto; padding:0 var(--space-4);}
+
+  .hero{padding:var(--space-4) 0 var(--space-6);}
+  .hero h1{font-family:var(--font-display); font-weight:600; font-size:var(--text-2xl); margin:0 0 var(--space-2) 0; letter-spacing:-0.01em;}
+  .hero p{margin:0; color:var(--color-text-muted); font-size:var(--text-base); max-width:560px; line-height:1.5;}
+
+  .cards{display:grid; grid-template-columns:repeat(3, 1fr); gap:var(--space-3); margin-bottom:var(--space-6);}
+  .card{padding:var(--space-4) var(--space-4);}
+  .card .label{font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.06em; color:var(--color-text-muted); font-weight:600; margin-bottom:6px;}
+  .card .value{font-family:var(--font-display); font-size:var(--text-xl); font-weight:600; color:var(--color-text);}
+  .card .value.total{color:var(--color-primary-dark);}
+  .card .sub{font-size:var(--text-xs); color:var(--color-text-muted); margin-top:4px;}
+
+  .section{margin-bottom:var(--space-6);}
+  .section-title{font-family:var(--font-display); font-size:var(--text-lg); font-weight:600; margin:0 0 var(--space-3) 0;}
+
+  .breakdown{padding:var(--space-4) var(--space-4);}
+  .cat-row{margin-bottom:var(--space-3);}
+  .cat-row:last-child{margin-bottom:0;}
+  .cat-row .cat-head{display:flex; justify-content:space-between; align-items:baseline; font-size:var(--text-sm); margin-bottom:5px;}
+  .cat-row .cat-name{font-weight:600; display:flex; align-items:center; gap:7px;}
+  .cat-row .cat-amount{color:var(--color-text-muted); font-variant-numeric:tabular-nums;}
+  .dot{width:9px;height:9px;border-radius:3px; display:inline-block; flex-shrink:0;}
+  .bar-track{height:9px; border-radius:6px; background:rgba(60,45,30,0.08); overflow:hidden;}
+  .bar-fill{height:100%; border-radius:6px; transition:width 600ms cubic-bezier(0.16,1,0.3,1);}
+
+  table{width:100%; border-collapse:collapse; font-size:var(--text-sm);}
+  .table-wrap{overflow-x:auto;}
+  thead th{
+    text-align:left; font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--color-text-muted); font-weight:600; padding:0 var(--space-3) var(--space-2);
+    border-bottom:1px solid var(--color-border);
+  }
+  tbody td{padding:var(--space-3) var(--space-3); border-bottom:1px solid var(--color-border); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(181,87,60,0.05);}
+  td.amount, th.amount{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600;}
+  td.date{white-space:nowrap; color:var(--color-text-muted);}
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; font-size:var(--text-xs); font-weight:600;
+    padding:3px 9px; border-radius:20px; color:#fff; white-space:nowrap;
+  }
+  tfoot td{padding:var(--space-3) var(--space-3); font-weight:700; border-top:2px solid var(--color-border);}
+
+  footer.note{
+    max-width:960px; margin:0 auto; padding:var(--space-4);
+    color:var(--color-text-muted); font-size:var(--text-xs); line-height:1.6;
+  }
+
+  @media (max-width:640px){
+    .cards{grid-template-columns:1fr;}
+    header.top{padding:var(--space-4) var(--space-3) var(--space-2);}
+    main{padding:0 var(--space-3);}
+
+    /* Card layout for the expense table on small screens */
+    table, thead, tbody, tfoot, tr, td, th{display:block; width:100%;}
+    thead{display:none;}
+    tbody tr{
+      border:1px solid var(--color-border); border-radius:10px; margin-bottom:var(--space-3);
+      padding:var(--space-2) var(--space-3); background:rgba(255,250,240,0.55);
+    }
+    tbody tr:hover{background:rgba(181,87,60,0.05);}
+    tbody td{border-bottom:none; padding:5px 0; display:flex; justify-content:space-between; align-items:center; gap:var(--space-2);}
+    tbody td::before{content:attr(data-label); font-size:var(--text-xs); color:var(--color-text-muted); font-weight:600; flex-shrink:0;}
+    tbody td.concept-cell{align-items:flex-start;}
+    tbody td.concept-cell span.val{text-align:right;}
+    td.amount{font-size:var(--text-base);}
+    tfoot tr{border-top:2px solid var(--color-border); margin-top:var(--space-1); padding-top:var(--space-2);}
+    tfoot td{display:flex; justify-content:space-between; padding:var(--space-2) 0;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" aria-label="Casa">
+      <path d="M3 11.5 12 4l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M5.5 10v9.5h13V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 19.5v-6h4v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>Casa Palacios</span>
+  </div>
+  <nav class="top-links">
+    <a href="./index.html">Modelo 3D</a>
+    <a href="./gastos.html" class="current">Gastos</a>
+  </nav>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Gastos de la casa</h1>
+    <p>Aquí vamos registrando cada peso que se ha gastado en la construcción, para que toda la familia pueda ver en qué se ha usado el dinero. Se actualiza cada vez que llega un nuevo recibo.</p>
+  </div>
+
+  <div class="cards" id="summaryCards"></div>
+
+  <div class="section">
+    <h2 class="section-title">Gasto por categoría</h2>
+    <div class="breakdown panel" id="categoryBreakdown"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Historial de gastos</h2>
+    <div class="table-wrap panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Categoría</th>
+            <th>Pagado a</th>
+            <th class="amount">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="gastosBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" data-label="">Total gastado</td>
+            <td class="amount" data-label="" id="footTotal"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer class="note">
+  Los montos provienen de los comprobantes de transferencia bancaria de cada pago. Por privacidad, este registro no incluye números de cuenta, claves de rastreo ni números de autorización — solo la fecha, el concepto, la categoría, a quién se le pagó y el monto.
+</footer>
+
+<script src="./gastos-data.js"></script>
+<script>
+  const CATEGORY_META = {
+    'Materiales':        { color: 'var(--cat-materiales)' },
+    'Mano de obra':      { color: 'var(--cat-mano-de-obra)' },
+    'Puertas y ventanas':{ color: 'var(--cat-puertas)' },
+    'Otros':             { color: 'var(--cat-otros)' },
+  };
+
+  const mxn = (n) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+  const fmtDate = (iso) => {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const total = GASTOS.reduce((s, g) => s + g.amount, 0);
+
+  // ---- Category breakdown ----
+  const byCategory = {};
+  GASTOS.forEach((g) => { byCategory[g.category] = (byCategory[g.category] || 0) + g.amount; });
+  const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+  const topCategory = sortedCats[0];
+
+  // ---- Summary cards ----
+  const cardsEl = document.getElementById('summaryCards');
+  cardsEl.innerHTML = `
+    <div class="card panel">
+      <div class="label">Total gastado</div>
+      <div class="value total">${mxn(total)}</div>
+      <div class="sub">${GASTOS.length} gasto${GASTOS.length === 1 ? '' : 's'} registrado${GASTOS.length === 1 ? '' : 's'}</div>
+    </div>
+    <div class="card panel">
+      <div class="label">Categoría con más gasto</div>
+      <div class="value">${topCategory[0]}</div>
+      <div class="sub">${mxn(topCategory[1])} · ${Math.round(topCategory[1] / total * 100)}% del total</div>
+    </div>
+    <div class="card panel">
+      <div class="label">Último gasto</div>
+      <div class="value">${mxn([...GASTOS].sort((a,b)=>b.date.localeCompare(a.date))[0].amount)}</div>
+      <div class="sub">${fmtDate([...GASTOS].sort((a,b)=>b.date.localeCompare(a.date))[0].date)}</div>
+    </div>
+  `;
+
+  // ---- Category bars ----
+  const breakdownEl = document.getElementById('categoryBreakdown');
+  breakdownEl.innerHTML = sortedCats.map(([cat, amt]) => {
+    const pct = Math.round(amt / total * 100);
+    const color = (CATEGORY_META[cat] || {}).color || 'var(--color-primary)';
+    return `
+      <div class="cat-row">
+        <div class="cat-head">
+          <span class="cat-name"><span class="dot" style="background:${color}"></span>${cat}</span>
+          <span class="cat-amount">${mxn(amt)} · ${pct}%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+      </div>
+    `;
+  }).join('');
+
+  // ---- Table ----
+  const sorted = [...GASTOS].sort((a, b) => b.date.localeCompare(a.date));
+  const bodyEl = document.getElementById('gastosBody');
+  bodyEl.innerHTML = sorted.map((g) => {
+    const color = (CATEGORY_META[g.category] || {}).color || 'var(--color-primary)';
+    return `
+      <tr>
+        <td class="date" data-label="Fecha"><span class="val">${fmtDate(g.date)}</span></td>
+        <td class="concept-cell" data-label="Concepto"><span class="val">${g.concept}</span></td>
+        <td data-label="Categoría"><span class="pill" style="background:${color}">${g.category}</span></td>
+        <td data-label="Pagado a"><span class="val">${g.paidTo}</span></td>
+        <td class="amount" data-label="Monto"><span class="val">${mxn(g.amount)}</span></td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('footTotal').textContent = mxn(total);
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+// Registro de gastos de la casa.
+// Cada vez que Rosario comparta un nuevo recibo, se agrega una entrada aquí.
+// No se guardan números de cuenta, claves de rastreo ni números de
+// autorización — solo lo necesario para que la familia entienda en qué
+// se gastó el dinero.
+//
+// category debe ser una de: 'Materiales', 'Mano de obra', 'Puertas y ventanas', 'Otros'
+
+const GASTOS = [
+  {
+    date: '2026-07-13',
+    concept: 'Gas, comida y gastos extra',
+    category: 'Otros',
+    paidTo: 'José P.',
+    amount: 1500,
+  },
+  {
+    date: '2026-07-13',
+    concept: 'Resto de materiales — cemento',
+    category: 'Materiales',
+    paidTo: 'José P.',
+    amount: 305,
+  },
+  {
+    date: '2026-07-13',
+    concept: 'Pago de plomero',
+    category: 'Mano de obra',
+    paidTo: 'José P.',
+    amount: 3000,
+  },
+  {
+    date: '2026-07-14',
+    concept: 'Pago de plomero',
+    category: 'Mano de obra',
+    paidTo: 'José P.',
+    amount: 2600,
+  },
+  {
+    date: '2026-07-14',
+    concept: 'Depósito de puerta principal (Folio 0536)',
+    category: 'Puertas y ventanas',
+    paidTo: 'Marcos C.',
+    amount: 8500,
+  },
+];

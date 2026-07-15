@@ -88,7 +88,19 @@
   @media (max-width:640px){
     .legend{display:none;}
     .hint{display:none;}
+    .top-nav{display:none;}
   }
+
+  .top-nav{
+    position:absolute; top:var(--space-4); left:var(--space-4);
+    padding:8px 10px; display:flex; gap:6px; font-size:var(--text-sm); font-weight:500;
+  }
+  .top-nav a{
+    color:var(--color-text); text-decoration:none; padding:6px 10px; border-radius:8px;
+    transition:background var(--transition-ui);
+  }
+  .top-nav a:hover{background:rgba(181,87,60,0.1);}
+  .top-nav a.current{background:var(--color-primary); color:#fdf6ee;}
 </style>
 </head>
 <body>
@@ -96,6 +108,10 @@
 <div id="canvas-holder"></div>
 
 <div class="ui">
+  <div class="top-nav panel" data-interactive>
+    <a href="./index.html" class="current">Modelo 3D</a>
+    <a href="./gastos.html">Gastos</a>
+  </div>
   <div class="hint panel" id="hint">Drag to orbit · scroll to zoom · right-drag to pan</div>
 
   <div class="controls">
