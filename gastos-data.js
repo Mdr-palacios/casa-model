@@ -42,4 +42,18 @@ const GASTOS = [
     paidTo: 'Marcos C.',
     amount: 8500,
   },
+  {
+    date: '2026-07-11',
+    concept: 'Azulejo, piso, pegazulejo y junteador (2 baños)',
+    category: 'Materiales',
+    paidTo: 'Pisos y Azulejos Treba',
+    amount: 13213,
+  },
+  {
+    date: '2026-07-11',
+    concept: '2 juegos de baño (WC + lavabo) — paquete Oxford',
+    category: 'Materiales',
+    paidTo: 'Pisos y Azulejos Treba',
+    amount: 7980,
+  },
 ];
