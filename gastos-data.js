@@ -56,4 +56,25 @@ const GASTOS = [
     paidTo: 'Pisos y Azulejos Treba',
     amount: 7980,
   },
+  {
+    date: '2026-07-14',
+    concept: 'Renta de casa',
+    category: 'Otros',
+    paidTo: 'José Palacios',
+    amount: 5000,
+  },
+  {
+    date: '2026-07-15',
+    concept: 'Pago a Tío Victor',
+    category: 'Otros',
+    paidTo: 'Tío Victor',
+    amount: 10000,
+  },
+  {
+    date: '2026-07-16',
+    concept: 'Gastos de mudanza',
+    category: 'Otros',
+    paidTo: 'José Palacios',
+    amount: 4000,
+  },
 ];
