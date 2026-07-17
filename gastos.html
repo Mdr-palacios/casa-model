@@ -200,6 +200,8 @@
 
 <footer class="note">
   Los montos provienen de los recibos y comprobantes de cada pago (transferencias y compras directas). Por privacidad, este registro no incluye números de cuenta, claves de rastreo ni números de autorización — solo la fecha, el concepto, la categoría, a quién se le pagó y el monto.
+  <br /><br />
+  El equivalente en dólares (USD) es solo una referencia aproximada, calculada con un tipo de cambio de $17.44 MXN por $1 USD (16 de julio de 2026). El tipo de cambio real cambia cada día, así que el monto en dólares puede variar un poco.
 </footer>
 
 <script src="./gastos-data.js"></script>
@@ -212,6 +214,11 @@
   };
 
   const mxn = (n) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+  // Tipo de cambio aproximado usado solo como referencia (MXN por 1 USD).
+  // Se actualiza a mano de vez en cuando; no es un tipo de cambio en vivo.
+  const MXN_PER_USD = 17.44;
+  const usdRateDate = '16 de julio de 2026';
+  const usd = (mxnAmount) => (mxnAmount / MXN_PER_USD).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
   const fmtDate = (iso) => {
     const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -231,6 +238,7 @@
     <div class="card panel">
       <div class="label">Total gastado</div>
       <div class="value total">${mxn(total)}</div>
+      <div class="sub">≈ ${usd(total)} USD</div>
       <div class="sub">${GASTOS.length} gasto${GASTOS.length === 1 ? '' : 's'} registrado${GASTOS.length === 1 ? '' : 's'}</div>
     </div>
     <div class="card panel">
