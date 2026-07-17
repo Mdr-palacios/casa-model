@@ -57,6 +57,13 @@ const GASTOS = [
     amount: 7980,
   },
   {
+    date: '2026-07-13',
+    concept: 'Mitad de 4 ventanas (Pedro Escobedo)',
+    category: 'Puertas y ventanas',
+    paidTo: 'Patricia G. (ventanas)',
+    amount: 14000,
+  },
+  {
     date: '2026-07-14',
     concept: 'Renta de casa',
     category: 'Otros',
