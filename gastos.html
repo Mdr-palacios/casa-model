@@ -86,6 +86,23 @@
   .section{margin-bottom:var(--space-6);}
   .section-title{font-family:var(--font-display); font-size:var(--text-lg); font-weight:600; margin:0 0 var(--space-3) 0;}
 
+  .cal-month{padding:var(--space-4); margin-bottom:var(--space-4);}
+  .cal-month:last-of-type{margin-bottom:0;}
+  .cal-month-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:var(--space-3); gap:var(--space-2);}
+  .cal-month-head h3{font-family:var(--font-display); font-weight:600; font-size:var(--text-base); margin:0;}
+  .cal-month-total{font-size:var(--text-sm); color:var(--color-text-muted); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7, 1fr); gap:5px;}
+  .cal-weekday{text-align:center; font-size:10px; color:var(--color-text-muted); font-weight:600; padding-bottom:4px; text-transform:uppercase; letter-spacing:0.03em;}
+  .cal-day{position:relative; aspect-ratio:1; border-radius:9px; border:1px solid var(--color-border); background:rgba(255,250,240,0.45); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;}
+  .cal-day.empty{border:none; background:none;}
+  .cal-day .daynum{position:absolute; top:3px; left:5px; font-size:9px; color:var(--color-text-muted); font-weight:600; line-height:1;}
+  .cal-day.has-expense .daynum{color:rgba(44,35,24,0.55);}
+  .cal-day.has-expense svg{width:15px; height:15px; display:block;}
+  .cal-day .amt{font-size:8px; font-weight:700; color:var(--color-text); font-variant-numeric:tabular-nums; line-height:1;}
+  .cal-legend{display:flex; flex-wrap:wrap; gap:var(--space-4); margin-top:var(--space-4); padding-top:var(--space-3); border-top:1px solid var(--color-border); font-size:var(--text-xs); color:var(--color-text-muted);}
+  .cal-legend .item{display:flex; align-items:center; gap:6px;}
+  .cal-legend svg{width:14px; height:14px; flex-shrink:0;}
+
   .breakdown{padding:var(--space-4) var(--space-4);}
   .cat-row{margin-bottom:var(--space-3);}
   .cat-row:last-child{margin-bottom:0;}
@@ -123,6 +140,11 @@
     .cards{grid-template-columns:1fr;}
     header.top{padding:var(--space-4) var(--space-3) var(--space-2);}
     main{padding:0 var(--space-3);}
+
+    .cal-grid{gap:3px;}
+    .cal-day.has-expense svg{width:13px; height:13px;}
+    .cal-day .amt{display:none;}
+    .cal-legend{gap:var(--space-3);}
 
     /* Card layout for the expense table on small screens */
     table, thead, tbody, tfoot, tr, td, th{display:block; width:100%;}
@@ -169,6 +191,11 @@
   <div class="cards" id="summaryCards"></div>
 
   <div class="section">
+    <h2 class="section-title">Calendario de gastos</h2>
+    <div id="calendarWrap"></div>
+  </div>
+
+  <div class="section">
     <h2 class="section-title">Gasto por categoría</h2>
     <div class="breakdown panel" id="categoryBreakdown"></div>
   </div>
@@ -207,10 +234,23 @@
 <script src="./gastos-data.js"></script>
 <script>
   const CATEGORY_META = {
-    'Materiales':        { color: 'var(--cat-materiales)' },
-    'Mano de obra':      { color: 'var(--cat-mano-de-obra)' },
-    'Puertas y ventanas':{ color: 'var(--cat-puertas)' },
-    'Otros':             { color: 'var(--cat-otros)' },
+    'Materiales':        { color: 'var(--cat-materiales)', hex: '#c9973f' },
+    'Mano de obra':      { color: 'var(--cat-mano-de-obra)', hex: '#b5573c' },
+    'Puertas y ventanas':{ color: 'var(--cat-puertas)', hex: '#5b7d8a' },
+    'Otros':             { color: 'var(--cat-otros)', hex: '#7a9269' },
+  };
+
+  // Un icono sencillo por categoría, para reconocer de un vistazo qué tipo
+  // de gasto hubo cada día en el calendario.
+  const ICONS = {
+    'Materiales':
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 20 7.5 12 11.5 4 7.5 12 3.5Z"/><path d="M4 12l8 4 8-4"/><path d="M4 16.5l8 4 8-4"/></svg>',
+    'Mano de obra':
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 6.3a3.7 3.7 0 0 1-4.6 4.55c-.9-.1-1.9.05-2.5.75L7.5 18.6a1.9 1.9 0 0 1-2.7-2.7l6.95-6.6c.7-.6.85-1.6.75-2.5A3.7 3.7 0 0 1 17.05 2l2.7 2.7a2.5 2.5 0 0 1-1.25 1.25L15.8 3.25"/></svg>',
+    'Puertas y ventanas':
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="1.3"/><path d="M12 3.5v17M4 12h16"/></svg>',
+    'Otros':
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 3.5H5.8A2.3 2.3 0 0 0 3.5 5.8v3.8c0 .6.24 1.2.67 1.62l9.6 9.6c.7.7 1.8.87 2.6.33a17.6 17.6 0 0 0 5.24-5.24c.54-.8.37-1.9-.33-2.6l-9.6-9.6a2.3 2.3 0 0 0-1.62-.67Z"/><path d="M7 7h.01"/></svg>',
   };
 
   const mxn = (n) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
@@ -286,6 +326,83 @@
   }).join('');
 
   document.getElementById('footTotal').textContent = mxn(total);
+
+  // ---- Calendario de gastos ----
+  const WEEKDAYS_ES = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  const escapeAttr = (str) => String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const hexToRgba = (hex, alpha) => {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const byMonth = {};
+  GASTOS.forEach((g) => {
+    const key = g.date.slice(0, 7);
+    (byMonth[key] = byMonth[key] || []).push(g);
+  });
+  const monthKeys = Object.keys(byMonth).sort().reverse();
+
+  const calendarHtml = monthKeys.map((key) => {
+    const [y, m] = key.split('-').map(Number);
+    const monthGastos = byMonth[key];
+    const monthTotal = monthGastos.reduce((s, g) => s + g.amount, 0);
+    const rawMonthLabel = new Date(y, m - 1, 1).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+    const monthLabel = rawMonthLabel.charAt(0).toUpperCase() + rawMonthLabel.slice(1);
+
+    const byDate = {};
+    monthGastos.forEach((g) => { (byDate[g.date] = byDate[g.date] || []).push(g); });
+
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const leadingEmpty = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+
+    let cells = '';
+    for (let i = 0; i < leadingEmpty; i++) cells += '<div class="cal-day empty"></div>';
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayGastos = byDate[dateStr];
+      if (!dayGastos) {
+        cells += `<div class="cal-day"><span class="daynum">${d}</span></div>`;
+        continue;
+      }
+      const dayTotal = dayGastos.reduce((s, g) => s + g.amount, 0);
+      const dominant = [...dayGastos].sort((a, b) => b.amount - a.amount)[0];
+      const meta = CATEGORY_META[dominant.category] || { hex: '#b5573c', color: 'var(--color-primary)' };
+      const icon = ICONS[dominant.category] || '';
+      const tooltip = dayGastos.map((g) => `${g.concept} \u2014 ${mxn(g.amount)}`).join('\n');
+      cells += `
+        <div class="cal-day has-expense" title="${escapeAttr(tooltip)}" style="background:${hexToRgba(meta.hex, 0.16)}; border-color:${hexToRgba(meta.hex, 0.4)};">
+          <span class="daynum">${d}</span>
+          <span style="color:${meta.hex};">${icon}</span>
+          <span class="amt">${mxn(dayTotal)}</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="cal-month panel">
+        <div class="cal-month-head">
+          <h3>${monthLabel}</h3>
+          <span class="cal-month-total">${mxn(monthTotal)}</span>
+        </div>
+        <div class="cal-grid">
+          ${WEEKDAYS_ES.map((w) => `<div class="cal-weekday">${w}</div>`).join('')}
+          ${cells}
+        </div>
+      </div>
+    `;
+  }).join('') + `
+    <div class="cal-legend">
+      ${Object.entries(CATEGORY_META).map(([cat, meta]) => `
+        <span class="item"><span style="color:${meta.hex}">${ICONS[cat]}</span>${cat}</span>
+      `).join('')}
+    </div>
+  `;
+
+  document.getElementById('calendarWrap').innerHTML = calendarHtml;
 </script>
 </body>
 </html>
