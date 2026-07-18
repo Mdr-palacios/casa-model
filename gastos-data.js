@@ -84,4 +84,11 @@ const GASTOS = [
     paidTo: 'José Palacios',
     amount: 4000,
   },
+  {
+    date: '2026-07-17',
+    concept: 'Pago final de 4 ventanas — ventanas terminadas',
+    category: 'Puertas y ventanas',
+    paidTo: 'Patricia G. (ventanas)',
+    amount: 14000,
+  },
 ];
