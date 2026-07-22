@@ -9,8 +9,8 @@
 const GASTOS = [
   {
     date: '2026-07-13',
-    concept: 'Gas, comida y gastos extra',
-    category: 'Otros',
+    concept: 'Materiales para el plomero',
+    category: 'Materiales',
     paidTo: 'José P.',
     amount: 1500,
   },
