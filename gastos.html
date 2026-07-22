@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<script src="./auth.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Gastos — Casa Manzanarez</title>
@@ -102,6 +101,8 @@
   .cal-legend{display:flex; flex-wrap:wrap; gap:var(--space-4); margin-top:var(--space-4); padding-top:var(--space-3); border-top:1px solid var(--color-border); font-size:var(--text-xs); color:var(--color-text-muted);}
   .cal-legend .item{display:flex; align-items:center; gap:6px;}
   .cal-legend svg{width:14px; height:14px; flex-shrink:0;}
+
+  .amount .val.refund{color:#437a22;}
 
   .breakdown{padding:var(--space-4) var(--space-4);}
   .cat-row{margin-bottom:var(--space-3);}
@@ -266,6 +267,10 @@
 
   const total = GASTOS.reduce((s, g) => s + g.amount, 0);
 
+  // El "último gasto" debe ser el pago más reciente, no un reembolso
+  // (los reembolsos se registran como montos negativos).
+  const lastRealExpense = [...GASTOS].filter((g) => g.amount > 0).sort((a, b) => b.date.localeCompare(a.date))[0];
+
   // ---- Category breakdown ----
   const byCategory = {};
   GASTOS.forEach((g) => { byCategory[g.category] = (byCategory[g.category] || 0) + g.amount; });
@@ -288,8 +293,8 @@
     </div>
     <div class="card panel">
       <div class="label">Último gasto</div>
-      <div class="value">${mxn([...GASTOS].sort((a,b)=>b.date.localeCompare(a.date))[0].amount)}</div>
-      <div class="sub">${fmtDate([...GASTOS].sort((a,b)=>b.date.localeCompare(a.date))[0].date)}</div>
+      <div class="value">${mxn(lastRealExpense.amount)}</div>
+      <div class="sub">${fmtDate(lastRealExpense.date)}</div>
     </div>
   `;
 
@@ -320,7 +325,7 @@
         <td class="concept-cell" data-label="Concepto"><span class="val">${g.concept}</span></td>
         <td data-label="Categoría"><span class="pill" style="background:${color}">${g.category}</span></td>
         <td data-label="Pagado a"><span class="val">${g.paidTo}</span></td>
-        <td class="amount" data-label="Monto"><span class="val">${mxn(g.amount)}</span></td>
+        <td class="amount" data-label="Monto"><span class="val${g.amount < 0 ? ' refund' : ''}">${mxn(g.amount)}</span></td>
       </tr>
     `;
   }).join('');

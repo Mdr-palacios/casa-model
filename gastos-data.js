@@ -91,4 +91,18 @@ const GASTOS = [
     paidTo: 'Patricia G. (ventanas)',
     amount: 14000,
   },
+  {
+    date: '2026-07-21',
+    concept: 'Pago al herrero por la puerta',
+    category: 'Puertas y ventanas',
+    paidTo: 'Herrero',
+    amount: 8500,
+  },
+  {
+    date: '2026-07-22',
+    concept: 'Reembolso de Tío Victor — ya no hará los pisos',
+    category: 'Otros',
+    paidTo: 'Tío Victor',
+    amount: -6000,
+  },
 ];
